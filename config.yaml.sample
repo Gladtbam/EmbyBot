@@ -1,0 +1,15 @@
+# Telegram
+API_ID: ''
+API_HASH: ''
+BOT_TOKEN: ''
+
+# 数据库
+DB_HOST: 'localhost'        # 数据库地址
+DB_USER: ''             # 用户数据库
+DB_PASSWORD: ''
+DB_NAME: ''
+DB_PORT: 3306
+
+# Emby
+EMBY_URL: ''
+API_KEY: ''
