@@ -5,19 +5,10 @@ from app.db import load_config
 
 admin_ids = load_config()['ADMIN_IDS']
 
-# 处理命令的装饰器
-def command_handler(command):
-    def decorator(func):
-        async def wrapper(event):
-            await func(event)
-
-        return wrapper
-    return decorator
-
 # 注册命令处理逻辑
 def register_commands(client):
     @client.on(events.NewMessage)
-    async def handle_commands(event):
+    async def handle_commands(event):           #传递event
         text = event.message.text
 
         tgid = event.sender_id
@@ -25,23 +16,31 @@ def register_commands(client):
         if text.startswith('/start'):
             await handle_start(event)
         elif text.startswith('/help'):
-            await handle_help(event)
+            if event.is_private:
+                await handle_help(event)
+            else:
+                await event.respond('仅私聊')
         elif text.startswith('/signup'):
             await handle_signup(event,tgid)
         elif text.startswith('/del'):
             if tgid in admin_ids:               # 判断是否在管理员列表中
-                await handle_delete(event, tgid)
+                await handle_delete(event)
             else:
                 await event.respond('您非管理员, 无权执行此命令')
+
+async def get_reply(event):
+    reply_message = await event.get_reply_message()
+    if reply_message:
+        reply_tgid = reply_message.sender_id
+    else:
+        await event.respond('请回复要删除的用户的消息')
+    return reply_tgid
 
 async def handle_start(event):
     await event.respond('欢迎使用机器人！')
 
 async def handle_help(event):
-    if event.is_private is not True:
-        await event.respond('仅私聊')
-    else:
-        await event.respond('这是帮助信息。')
+    await event.respond('这是帮助信息。')
 
 async def handle_signup(event, tgid):
     user = await event.client.get_entity(tgid)  # 获取tg用户信息
@@ -65,13 +64,13 @@ async def handle_signup(event, tgid):
     await event.respond(message)
 
 async def handle_delete(event):
-    reply_message = await event.get_reply_message()
-    reply_tgid = reply_message.sender_id
-
+    reply_tgid = await get_reply(event)
     result = await search_user(reply_tgid)
-    await delete_user(reply_tgid)
 
-    await User_delete(result[1])
-
-    await event.respond(f'用户: {result[1]} 已删除')
+    if result:
+        await delete_user(reply_tgid)
+        await User_delete(result[1])
+        await event.respond(f'用户: {result[1]} 已删除')
+    else:
+        await event.respond('用户不存在')
 
