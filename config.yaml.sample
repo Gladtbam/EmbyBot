@@ -2,10 +2,13 @@
 API_ID: ''
 API_HASH: ''
 BOT_TOKEN: ''
+ADMIN_IDS:                  #管理员列表
+  - xxx
+  - xxx
 
 # 数据库
 DB_HOST: 'localhost'        # 数据库地址
-DB_USER: ''             # 用户数据库
+DB_USER: ''                 # 用户数据库
 DB_PASSWORD: ''
 DB_NAME: ''
 DB_PORT: 3306
