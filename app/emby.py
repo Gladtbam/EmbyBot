@@ -85,9 +85,14 @@ async def User_delete(embyid):
 
 async def Ban_User(emby_ids):
     for embyid in emby_ids:
-        print(embyid)
         data = {
             "IsDisabled": True
         }
         url = f"{emby_url}/emby/Users/{embyid}/Policy?api_key={api_key}"
         requests.post(url, json=data, headers=headers)
+
+# 删除已封禁用户
+async def Delete_Ban(ban_emby_ids):
+    for embyid in ban_emby_ids:
+        url = f"{emby_url}/emby/Users/{embyid}?api_key={api_key}"
+        requests.delete(url, headers=headers)
