@@ -27,7 +27,7 @@ async def User_Policy(embyid):
         "IsHiddenRemotely": True,                   # 是否在远程访问时隐藏
         "IsHiddenFromUnusedDevices": False,         # 是否在未使用的设备上隐藏
         "IsDisabled": False,                        # 用户是否被禁用
-        "MaxParentalRating": 0,                     # 最大家长级别
+        # "MaxParentalRating": 0,                     # 最大家长级别
         "BlockedTags": [],                          # 被阻止的标签列表
         "IsTagBlockingModeInclusive": False,        # 是否以标签阻止模式进行阻止
         "IncludeTags": [],                          # 包含的标签列表
