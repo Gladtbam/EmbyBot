@@ -1,6 +1,7 @@
 from telethon.sync import TelegramClient
 from app.tg import register_commands
 from app.db import load_config
+from app.scheduler import start_scheduler
 
 # 填入你的API ID和API Hash
 api_id = load_config()['API_ID']
@@ -15,4 +16,5 @@ client = TelegramClient('bot', api_id, api_hash).start(bot_token=bot_token)
 # 启动客户端
 with client:
     register_commands(client)
+    start_scheduler()
     client.run_until_disconnected()

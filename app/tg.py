@@ -30,10 +30,11 @@ def register_commands(client):
 
 async def get_reply(event):
     reply_message = await event.get_reply_message()
+    reply_tgid = None
     if reply_message:
         reply_tgid = reply_message.sender_id
     else:
-        await event.respond('请回复要删除的用户的消息')
+        await event.respond('请回复一条消息')
     return reply_tgid
 
 async def handle_start(event):
@@ -65,12 +66,14 @@ async def handle_signup(event, tgid):
 
 async def handle_delete(event):
     reply_tgid = await get_reply(event)
-    result = await search_user(reply_tgid)
 
-    if result:
-        await delete_user(reply_tgid)
-        await User_delete(result[1])
-        await event.respond(f'用户: {result[1]} 已删除')
-    else:
-        await event.respond('用户不存在')
+    if reply_tgid is not None:
+        result = await search_user(reply_tgid)
+
+        if result:
+            await delete_user(reply_tgid)
+            await User_delete(result[1])
+            await event.respond(f'用户: {result[1]} 已删除')
+        else:
+            await event.respond('用户不存在')
 

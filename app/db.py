@@ -32,7 +32,7 @@ class User(Base):
     tgid = Column(String(50), primary_key=True)
     embyid = Column(String(50))
     embyname = Column(String(50))
-    limitdata = Column(DateTime)
+    limitdate = Column(DateTime)
     ban = Column(Boolean)
 
 # 创建数据表（如果不存在）
@@ -51,7 +51,7 @@ async def create_user(tgid, embyid, embyname):
     one_month_later = current_time + datetime.timedelta(days=30)
 
     # 创建用户
-    user = User(tgid=tgid, embyid=embyid, embyname=embyname, limitdata=one_month_later, ban=False)
+    user = User(tgid=tgid, embyid=embyid, embyname=embyname, limitdate=one_month_later, ban=False)
     session.add(user)
     session.commit()
 
@@ -63,8 +63,9 @@ async def search_user(tgid):
 
     user = session.query(User).filter(User.tgid == tgid).first()
     session.close()
-    return [user.tgid,user.embyid,user.embyname,user.limitdata,user.ban] if user else None     #以列表的形式返回所有
+    return [user.tgid,user.embyid,user.embyname,user.limitdate,user.ban] if user else None     #以列表的形式返回所有
 
+# 删除用户
 async def delete_user(tgid):
     session = create_session()
 
@@ -73,3 +74,20 @@ async def delete_user(tgid):
     session.commit()
 
     session.close()
+
+# 封禁用户
+async def ban_user():
+    session = create_session()
+    current_time = datetime.datetime.now()
+
+    user_ban = session.query(User).filter(User.limitdate <= current_time, User.ban == False).all()
+    emby_ids = []
+
+    for user in user_ban:
+        user.ban = True
+        emby_ids.append(user.embyid)                # 被封禁的用户Emby ID列表
+
+    session.commit()
+    session.close()
+
+    return emby_ids

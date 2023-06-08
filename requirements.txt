@@ -3,5 +3,6 @@ Telethon~=1.28.5
 cryptg
 pillow
 aiohttp
+APScheduler
 sqlalchemy
 mysql-connector-python
