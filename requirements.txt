@@ -1,8 +1,10 @@
 PyYAML~=6.0
 Telethon~=1.28.5
 cryptg
+base58
 pillow
 aiohttp
 APScheduler
 sqlalchemy
+PyNaCl
 mysql-connector-python

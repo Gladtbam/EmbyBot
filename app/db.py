@@ -1,5 +1,5 @@
 import yaml
-import datetime
+from datetime import datetime, timedelta
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, Boolean, delete
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
@@ -36,6 +36,13 @@ class User(Base):
     ban = Column(Boolean)
     deletedate = Column(DateTime)
 
+class Code(Base):
+    __tablename__ = 'code'
+    codes = Column(String(256), primary_key=True)
+    verify_key = Column(String(256))
+    sha256_hash = Column(String(256))
+    data = Column(String(50))
+
 # 创建数据表（如果不存在）
 Base.metadata.create_all(engine)
 
@@ -48,8 +55,8 @@ def create_session():
 async def create_user(tgid, embyid, embyname):
     session = create_session()
 
-    current_time = datetime.datetime.now()
-    one_month_later = current_time + datetime.timedelta(days=30)
+    current_time = datetime.now()
+    one_month_later = current_time + timedelta(days=30)
 
     # 创建用户
     user = User(tgid=tgid, embyid=embyid, embyname=embyname, limitdate=one_month_later, ban=False)
@@ -58,13 +65,28 @@ async def create_user(tgid, embyid, embyname):
 
     session.close()
 
+# 创建 码
+async def create_code(code, public_key, sha256_hash, data):
+    session = create_session()
+    code = Code(codes=code, verify_key=public_key, sha256_hash=sha256_hash, data=data)
+    session.add(code)
+    session.commit()
+    session.close()
+
 # 搜索用户
 async def search_user(tgid):
     session = create_session()
 
     user = session.query(User).filter(User.tgid == tgid).first()
     session.close()
-    return [user.tgid,user.embyid,user.embyname,user.limitdate,user.ban] if user else None     #以列表的形式返回所有
+    return [user.tgid, user.embyid, user.embyname, user.limitdate, user.ban] if user else None     #以列表的形式返回所有
+
+# 搜索 码
+async def search_code(code):
+    session = create_session()
+    code_ = session.query(Code).filter(Code.codes == code).first()
+    session.close()
+    return [code_.codes, code_.verify_key, code_.sha256_hash, code_.data] if code_ else None
 
 # 删除用户(手动)
 async def delete_user(tgid):
@@ -76,11 +98,19 @@ async def delete_user(tgid):
 
     session.close()
 
+# 删除 码
+async def delete_code(code):
+    session = create_session()
+    del_code = delete(Code).where(Code.codes == code)
+    session.execute(del_code)
+    session.commit()
+    session.close()
+
 # 封禁用户
 async def ban_user():
     session = create_session()
-    current_time = datetime.datetime.now()
-    one_week_later = current_time + datetime.timedelta(days=7)
+    current_time = datetime.now()
+    one_week_later = current_time + timedelta(days=7)
 
     user_ban = session.query(User).filter(User.limitdate <= current_time, User.ban == False).all()
     emby_ids = []
@@ -99,7 +129,7 @@ async def ban_user():
 async def delete_ban():
     session = create_session()
 
-    current_time = datetime.datetime.now()
+    current_time = datetime.now()
 
     user_ban_delete = session.query(User).filter(User.deletedate <= current_time, User.ban == True).all()
     ban_emby_ids = []
