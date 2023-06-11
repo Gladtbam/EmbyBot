@@ -79,7 +79,7 @@ async def search_user(tgid):
 
     user = session.query(User).filter(User.tgid == tgid).first()
     session.close()
-    return [user.tgid, user.embyid, user.embyname, user.limitdate, user.ban] if user else None     #以列表的形式返回所有
+    return [user.tgid, user.embyid, user.embyname, user.limitdate, user.ban, user.deletedate] if user else None     #以列表的形式返回所有
 
 # 搜索 码
 async def search_code(code):

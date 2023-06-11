@@ -34,7 +34,7 @@ def register_commands(client):
 
         elif text.startswith('/code'):
             if event.is_private or tgid in admin_ids:
-                await handle_code(event, tgid)
+                await handle_code(event)
             else:
                 await event.respond('仅私聊')
 
@@ -43,6 +43,19 @@ def register_commands(client):
                 await handle_delete(event)
             else:
                 await event.respond('您非管理员, 无权执行此命令')
+
+        elif text.startswith('/me'):
+            if event.is_private or tgid in admin_ids:
+                await handle_me(event, tgid)
+            else:
+                await event.respond('仅私聊')
+
+        elif text.startswith('/renew'):
+            command, *args = text.split(' ')
+            if len(args) > 0:
+                await handle_renew(event, tgid, args[0])
+            else:
+                await event.respond('请输入续期码')
 
 async def get_reply(event):
     reply_message = await event.get_reply_message()
@@ -65,10 +78,9 @@ async def handle_signup_code(event, tgid, code):
         verify_result = await verify_code(code, result[1], result[2]) 
         func_bit = int(result[3][0].strip())
         tgid_code = int(result[3][1:].strip())
-        print(func_bit,tgid_code)
         if verify_result:
             if func_bit == 1:
-                if tgid_code == tgid:
+                if tgid_code == tgid or tgid_code in admin_ids:
                     await handle_signup(event, tgid)
                     await delete_code(code)
                 else:
@@ -101,7 +113,7 @@ async def handle_signup(event, tgid):
     
     await event.respond(message)
 
-async def handle_code(event, tgid):
+async def handle_code(event):
     activation_button = Button.inline("注册码", b"activation_code")
     renew_button = Button.inline("续期码", b"renew_code")
     keyboard = [
@@ -123,4 +135,40 @@ async def handle_delete(event):
     else:
         await event.respond('用户不存在')
 
+async def handle_me(event, tgid):
+    user_result = await search_user(tgid)
+    renew_button = Button.inline("续期", b"renew")
+    keyboard = [
+        [renew_button]
+    ]
+    if user_result is not None:
+        message = f'''
+**Telegram ID**: `{user_result[0]}`
+**Emby ID**: `{user_result[1]}`
+**用户名**: `{user_result[2]}`
+**有效期**: `{user_result[3]}`
+**Ban**: `{user_result[4]}`
+'''
+        await event.respond(message, parse_mode='Markdown', buttons=keyboard)
+    else:
+        await event.respond('您尚未有账户')
 
+async def handle_renew(event, tgid, code):
+    result = await search_code(code)
+    if result is not None:
+        verify_result = await verify_code(code, result[1], result[2]) 
+        func_bit = int(result[3][0].strip())
+        tgid_code = int(result[3][1:].strip())
+        if verify_result:
+            if func_bit == 0:
+                if tgid_code == tgid or tgid_code in admin_ids:
+                    await event.respond('激活码续期: 未完成')
+                    await delete_code(code)
+                else:
+                    await event.respond('ID校验失败, 不属于你的注册码')
+            else:
+                await event.respond('校验失败, 非续期码')
+        else:
+            await event.respond('校验失败, 该续期码失效, 可能已被使用或篡改\n请检查您的续期码')
+    else:
+        await event.respond('校验失败, 该续期码失效, 可能已被使用或篡改\n请检查您的续期码')
