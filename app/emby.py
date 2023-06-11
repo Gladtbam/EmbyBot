@@ -20,7 +20,7 @@ async def New_User(tgname):
     embyid = create_user.json()['Id']
     return embyid
 
-async def User_Policy(embyid):
+async def User_Policy(embyid, BlockMeida):
     data = {
         "IsAdministrator": False,                   # 是否为管理员
         "IsHidden": True,                           # 用户是否隐藏
@@ -56,7 +56,7 @@ async def User_Policy(embyid):
         "EnableAllFolders": True,                   # 是否允许访问所有文件夹
         "InvalidLoginAttemptCount": 0,              # 无效登录尝试的次数
         "EnablePublicSharing": False,               # 是否允许公开共享
-        "BlockedMediaFolders": [],                  # 被阻止的媒体文件夹列表
+        "BlockedMediaFolders": [BlockMeida],                  # 被阻止的媒体文件夹列表
         "RemoteClientBitrateLimit": 0,              # 远程客户端的比特率限制
         # "AuthenticationProviderId": "string",     # 认证提供者的 ID
         "ExcludedSubFolders": [],                   # 排除的子文件夹列表

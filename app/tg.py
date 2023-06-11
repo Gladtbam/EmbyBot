@@ -102,9 +102,10 @@ async def handle_signup(event, tgid):
         if result is not None:
             message = '用户已存在'
         else:
+            BlockMedia = ("Japan")
             embyid = await New_User(tgname)
             await create_user(tgid, embyid, tgname)
-            await User_Policy(embyid)
+            await User_Policy(embyid, BlockMedia)
             passwd = await Password(embyid)
 
             message = f'创建成功！！！\nEMBY ID: {embyid}\n用户名: {tgname}\n初始密码: {passwd}\n请及时修改密码'
@@ -138,8 +139,10 @@ async def handle_delete(event):
 async def handle_me(event, tgid):
     user_result = await search_user(tgid)
     renew_button = Button.inline("续期", b"renew")
+    media_button = Button.inline("媒体库开关")
     keyboard = [
-        [renew_button]
+        [renew_button],
+        [media_button]
     ]
     if user_result is not None:
         message = f'''
