@@ -155,7 +155,7 @@ async def update_score(use_ratios, total_score):
         exist_score = session.query(Score).get(user_id)         # 查询是否存在相同的记录
 
         if exist_score:
-            exist_score.value += ratio
+            exist_score.value += int(ratio * 0.5 * total_score)
         else:
             new_score = Score(tgid=user_id, value=int(ratio * 0.5 * total_score))
             session.add(new_score)

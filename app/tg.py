@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from telethon import events, Button
+from telethon.tl.types import ChatBannedRights
 from asyncio import sleep
 from app.db import create_user, search_user, delete_user, search_code, delete_code
 from app.emby import New_User, User_Policy, Password, User_delete
@@ -175,3 +176,11 @@ async def handle_renew(event, tgid, code):
             await event.respond('校验失败, 该续期码失效, 可能已被使用或篡改\n请检查您的续期码')
     else:
         await event.respond('校验失败, 该续期码失效, 可能已被使用或篡改\n请检查您的续期码')
+
+# 全体禁言
+async def mute_group(client, group_id):
+    await client.edit_permissions(group_id, '*', ChatBannedRights(until_date=None, send_messages=False))
+
+# 全体解禁
+async def unmute_group(client, group_id):
+    await client.edit_permissions(group_id, '*', ChatBannedRights(until_date=None, send_messages=True))

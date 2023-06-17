@@ -51,7 +51,6 @@ async def calculate_scores():
                 score += count * 1
         scores[user_id] = score
         total_score += score
-    print(total_score)
 
     user_ratios = {}
     for user_id, score in scores.items():
