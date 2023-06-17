@@ -43,6 +43,11 @@ class Code(Base):
     sha256_hash = Column(String(256))
     data = Column(String(50))
 
+class Score(Base):
+    __tablename__ = 'score'
+    tgid = Column(String(50), primary_key=True)
+    value = Column(Integer)
+
 # 创建数据表（如果不存在）
 Base.metadata.create_all(engine)
 
@@ -142,3 +147,17 @@ async def delete_ban():
     session.commit()
     session.close()
     return ban_emby_ids
+
+# 更新 分
+async def update_score(use_ratios, total_score):
+    session = create_session()
+    for user_id, ratio in use_ratios.items():
+        exist_score = session.query(Score).get(user_id)         # 查询是否存在相同的记录
+
+        if exist_score:
+            exist_score.value += ratio
+        else:
+            new_score = Score(tgid=user_id, value=int(ratio * 0.5 * total_score))
+            session.add(new_score)
+    session.commit()
+    session.close()

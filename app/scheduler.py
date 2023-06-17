@@ -1,7 +1,8 @@
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-from app.db import ban_user, delete_ban
+from app.db import ban_user, delete_ban, update_score
 from app.emby import Ban_User, Delete_Ban
+from app.tgscore import calculate_scores
 
 scheduler = AsyncIOScheduler()
 
@@ -17,6 +18,10 @@ async def delete_job():
     ban_emby_ids = await delete_ban()
     await Delete_Ban(ban_emby_ids)
 
+@scheduler.scheduled_job('cron', hour=23, minute=8)
+async def score_job():
+    user_ratios, total_score = await calculate_scores()
+    await update_score(user_ratios, total_score)
 # 启动任务
 def start_scheduler():
     scheduler.start()
