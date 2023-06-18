@@ -94,10 +94,16 @@ async def handle_code(event, tgid, code):
                         if tgid_code in admin_ids:
                             await update_limit(tgid)
                             await delete_code(code)
+                            if result_user[4] is True:                  # 解封Emby
+                                BlockMedia = ("Japan")
+                                await User_Policy(result_user[1], BlockMedia)
                         else:
                             await update_limit(tgid)
                             await change_score(tgid_code, -100)
                             await delete_code(code)
+                            if result_user[4] is True:
+                                BlockMedia = ("Japan")
+                                await User_Policy(result_user[1], BlockMedia)
                     else:
                         await event.respond(f'离到期还有 {remain_day.days} 天\n目前小于 7 天才允许续期')
                 else:
