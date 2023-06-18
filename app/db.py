@@ -81,7 +81,6 @@ async def create_code(code, public_key, sha256_hash, data):
 # 搜索用户
 async def search_user(tgid):
     session = create_session()
-
     user = session.query(User).filter(User.tgid == tgid).first()
     session.close()
     return [user.tgid, user.embyid, user.embyname, user.limitdate, user.ban, user.deletedate] if user else None     #以列表的形式返回所有
@@ -93,10 +92,16 @@ async def search_code(code):
     session.close()
     return [code_.codes, code_.verify_key, code_.sha256_hash, code_.data] if code_ else None
 
+# 搜索 积分
+async def search_score(tgid):
+    session = create_session()
+    score_ = session.query(Score).filter(Score.tgid == tgid).first()
+    session.close()
+    return [score_.tgid, score_.value] if score_ else None
+
 # 删除用户(手动)
 async def delete_user(tgid):
     session = create_session()
-
     del_user = delete(User).where(User.tgid == tgid)
     session.execute(del_user)
     session.commit()
@@ -108,6 +113,18 @@ async def delete_code(code):
     session = create_session()
     del_code = delete(Code).where(Code.codes == code)
     session.execute(del_code)
+    session.commit()
+    session.close()
+
+# 更改 积分
+async def change_score(tgid, score_value):
+    session = create_session()
+    exist_score = session.query(Score).get(tgid)
+    if exist_score:
+        exist_score.value += score_value
+    else:
+        new_score = Score(tgid=tgid, value=score_value)
+        session.add(new_score)
     session.commit()
     session.close()
 
@@ -133,7 +150,6 @@ async def ban_user():
 # 删除已封禁用户
 async def delete_ban():
     session = create_session()
-
     current_time = datetime.now()
 
     user_ban_delete = session.query(User).filter(User.deletedate <= current_time, User.ban == True).all()
