@@ -1,8 +1,9 @@
-from telethon import events
+from telethon import events, Button
 from asyncio import TimeoutError, wait_for, sleep
 from datetime import datetime, timedelta
 from app.regcode import generate_code, verify_code
-from app.db import create_code, search_code, delete_code, search_user
+from app.tg import handle_create_code
+from app.db import create_code, search_code, delete_code, search_user, update_limit, change_score
 from app.db import load_config
 
 admin_ids = load_config()['ADMIN_IDS']
@@ -17,8 +18,12 @@ def register_callback(client):
             await handle_activation_code(event, tgid)
         elif data == 'renew_code':
             await handle_renew_code(event, tgid)
+        elif data == 'create_code':
+            await handle_create_code(event)
         elif data == 'renew':
-            await handle_renew(event, tgid)
+            await handle_renew(event)
+        elif data == 'renew_right':
+            await handle_renew_right(event, tgid)
 
 async def handle_activation_code(event,tgid):
     if tgid in admin_ids:
@@ -37,19 +42,26 @@ async def handle_renew_code(event, tgid):
     await create_code(code, public_key, sha256_hash, data)
     await event.respond(f"你生成的续期码为:(点击复制) \n`{code}`")
 
-async def handle_renew(event, tgid):
+async def handle_renew(event):
+    right_button = Button.inline("确定", b"renew_right")
+    keyboard = [
+        [right_button]
+    ]
+    message = await event.respond('点击确认, 减除 100 积分续期', buttons=keyboard)
+    await sleep(10)
+    await message.delete()
+
+async def handle_renew_right(event, tgid):
     result = await search_user(tgid)
     current_time = datetime.now()
-    one_month_later = current_time + timedelta(days=30)
-    if result is not None:                                  # 没必要if，报个jr错
+    if result is not None:
         limitdate = result[3]
         remain_day = limitdate - current_time
-        if remain_day.days <= 7:                            # 当剩余时间小于7天
-            await event.respond('未完成')
+        if remain_day.days <= 7:
+            await update_limit(tgid)
+            await change_score(tgid, -100)
         else:
-            await event.respond(f'离到期还有 {remain_day.days} 天')
-    else:
-        await event.respond('用户不存在, 请注册')
+            await event.respond(f'离到期还有 {remain_day.days} 天\n目前小于 7 天才允许续期')
 
 async def wait_user_input(event):
     try:

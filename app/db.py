@@ -184,3 +184,19 @@ async def update_score(use_ratios, total_score):
     session.close()
 
     return user_score
+
+# 更新续期时间和解封
+async def update_limit(tgid):
+    session = create_session()
+    current_time = datetime.now()
+    update_time = current_time + timedelta(days=30)
+
+    user = session.query(User).get(tgid)
+    if user.ban == True:
+        user.ban = False
+        user.limitdate = update_time
+    else:
+        user.limitdate = user.limitdate + timedelta(days=30)
+
+    session.commit()
+    session.close()
