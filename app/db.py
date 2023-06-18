@@ -16,6 +16,7 @@ db_password = load_config()['DB_PASSWORD']
 db_host = load_config()['DB_HOST']
 db_port = load_config()['DB_PORT']
 db_name = load_config()['DB_NAME']
+admin_ids = load_config()['ADMIN_IDS']
 
 # 创建数据库连接引擎
 engine = create_engine(f'mysql+mysqlconnector://{db_user}:{db_password}@{db_host}:3306/{db_name}')
@@ -61,7 +62,10 @@ async def create_user(tgid, embyid, embyname):
     session = create_session()
 
     current_time = datetime.now()
-    one_month_later = current_time + timedelta(days=30)
+    if tgid in admin_ids:
+        one_month_later = current_time + timedelta(weeks=4752)          # 拉长时间, 表示管理员不过期
+    else:
+        one_month_later = current_time + timedelta(days=30)
 
     # 创建用户
     user = User(tgid=tgid, embyid=embyid, embyname=embyname, limitdate=one_month_later, ban=False)

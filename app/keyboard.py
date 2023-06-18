@@ -2,6 +2,7 @@ from telethon import events, Button
 from asyncio import TimeoutError, wait_for, sleep
 from datetime import datetime, timedelta
 from app.regcode import generate_code, verify_code
+from app.emby import User_Policy
 from app.tg import handle_create_code
 from app.db import create_code, search_code, delete_code, search_user, update_limit, change_score
 from app.db import load_config
@@ -60,6 +61,9 @@ async def handle_renew_right(event, tgid):
         if remain_day.days <= 7:
             await update_limit(tgid)
             await change_score(tgid, -100)
+            if result[4] is True:                  # 解封Emby
+                BlockMedia = ("Japan")
+                await User_Policy(result[1], BlockMedia)
         else:
             await event.respond(f'离到期还有 {remain_day.days} 天\n目前小于 7 天才允许续期')
 

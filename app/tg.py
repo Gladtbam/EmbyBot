@@ -7,8 +7,11 @@ from app.db import create_user, search_user, delete_user, search_code, delete_co
 from app.emby import New_User, User_Policy, Password, User_delete
 from app.db import load_config
 from app.regcode import verify_code
+import re
 
 admin_ids = load_config()['ADMIN_IDS']
+
+signup_method = {"time": 0, "remain_num": 0.0}      # 注册方法
 
 # 注册命令处理逻辑
 def register_commands(client):
@@ -28,14 +31,18 @@ def register_commands(client):
                 await event.respond('仅私聊')
 
         elif text.startswith('/signup'):
-            await event.respond('未开放注册！！！\n如果有注册码, 请通过 `/code` 使用注册码注册')
+            command, *args = text.split(' ')
+            await handle_signup_method(event, tgid, args)
 
         elif text.startswith('/code'):
             command, *args = text.split(' ')
-            if event.is_private or tgid in admin_ids:
-                await handle_code(event, tgid, args[0])
+            if len(args) > 0:
+                if event.is_private or tgid in admin_ids:
+                    await handle_code(event, tgid, args[0])
+                else:
+                    await event.respond('仅私聊')
             else:
-                await event.respond('仅私聊')
+                await event.respond('请回复一个“码”')
 
         elif text.startswith('/del'):
             if tgid in admin_ids:               # 判断是否在管理员列表中
@@ -64,12 +71,32 @@ async def handle_start(event):
 async def handle_help(event):
     message = f'''
 /help 帮助
-/signup 注册, 仅开放注册时使用
+/signup 注册, 仅开放注册时使用。
 /code 使用注册码注册, 或者使用续期码续期。例: /code 123
 /del 删除 Emby 账户, 仅管理员使用, 需回复一个用户
 /me 查看个人消息(包含其它工具), 仅私聊
     '''
     await event.respond(message, parse_mode='Markdown')
+
+async def handle_signup_method(event, tgid, args):
+    current_time = datetime.now().timestamp()
+    if tgid in admin_ids:
+        if len(args) > 0:
+            if re.match(r'^\d+$', args[0]):         # 注册人数
+                signup_method['remain_num'] = args[0]
+            elif re.match(r'^(\d+[hms])+$', args[0]):
+                total_seconds = await parse_combined_duration(args[0])
+                signup_method['time'] = current_time + total_seconds
+        else:
+            await handle_signup(event, tgid)
+    else:
+        if signup_method['remain_num'] != 0:
+            await handle_signup(event, tgid)
+            signup_method['remain_num'] = int(signup_method['remain_num']) - 1
+        elif float(signup_method['time']) > current_time:
+            await handle_signup(event, tgid)
+        else:
+            await event.respond('未开放注册！！！\n如果有注册码, 请通过 `/code` 使用注册码注册')
 
 async def handle_code(event, tgid, code):
     result = await search_code(code)
@@ -123,7 +150,10 @@ async def handle_signup(event, tgid):
         if result is not None:
             message = '用户已存在'
         else:
-            BlockMedia = ("Japan")
+            if tgid in admin_ids:
+                BlockMedia = ("Japan")
+            else:
+                BlockMedia = ()
             embyid = await New_User(tgname)
             await create_user(tgid, embyid, tgname)
             await User_Policy(embyid, BlockMedia)
@@ -189,6 +219,43 @@ async def send_scores_to_group(client, chat_id, user_scores):
     
     await client.send_message(InputPeerChat(chat_id), message)
 
+# 计算总时间
+async def parse_duration(duration_str):
+    total_seconds = 0
+    pattern = r'(\d+)([hms])'
+    matches = re.findall(pattern, duration_str)
+    for value, unit in matches:
+        value = int(value)
+        if unit == 'h':
+            total_seconds += value * 3600
+        elif unit == 'm':
+            total_seconds += value * 60
+        elif unit == 's':
+            total_seconds += value
+    return total_seconds
+
+async def parse_combined_duration(duration_str):
+    total_seconds = 0
+    pattern = r'(\d+h)?(\d+m)?(\d+s)?'
+    match = re.match(pattern, duration_str)
+    if match:
+        hours = match.group(1)
+        minutes = match.group(2)
+        seconds = match.group(3)
+
+        if hours:
+            hours = int(hours[:-1])  # 去除末尾的 'h' 并转换为整数
+            total_seconds += hours * 3600
+
+        if minutes:
+            minutes = int(minutes[:-1])  # 去除末尾的 'm' 并转换为整数
+            total_seconds += minutes * 60
+
+        if seconds:
+            seconds = int(seconds[:-1])  # 去除末尾的 's' 并转换为整数
+            total_seconds += seconds
+
+    return total_seconds
 # 全体禁言
 async def mute_group(client, group_id):
     await client.edit_permissions(group_id, '*', ChatBannedRights(until_date=None, send_messages=False))
