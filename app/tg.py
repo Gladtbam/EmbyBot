@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from telethon import events, Button
-from telethon.tl.types import ChatBannedRights
+from telethon.tl.types import ChatBannedRights, InputPeerChat
+from telethon.utils import get_display_name
 from asyncio import sleep
 from app.db import create_user, search_user, delete_user, search_code, delete_code
 from app.emby import New_User, User_Policy, Password, User_delete
@@ -176,6 +177,16 @@ async def handle_renew(event, tgid, code):
             await event.respond('校验失败, 该续期码失效, 可能已被使用或篡改\n请检查您的续期码')
     else:
         await event.respond('校验失败, 该续期码失效, 可能已被使用或篡改\n请检查您的续期码')
+
+# 发送积分更新消息
+async def send_scores_to_group(client, chat_id, user_scores):
+    message = "昨日积分获取情况：\n\n"
+    for user_id, score_value in user_scores.items():
+        user = await client.get_entity(user_id)
+        username = get_display_name(user)
+        message += f"@{username} 获得: {score_value} 积分\n"
+    
+    await client.send_message(InputPeerChat(chat_id), message)
 
 # 全体禁言
 async def mute_group(client, group_id):

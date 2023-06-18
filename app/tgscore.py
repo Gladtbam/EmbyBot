@@ -23,7 +23,7 @@ def score_commands(client):
                     msg_type = 'media'
             else:
                 msg_type = 'text'
-            print(user_id, msg_type)
+
             if user_id in user_msg_count:
                 if msg_type in user_msg_count[user_id]:
                     user_msg_count[user_id][msg_type] += 1
@@ -31,7 +31,6 @@ def score_commands(client):
                     user_msg_count[user_id][msg_type] = 1
             else:
                 user_msg_count[user_id] = {msg_type: 1}
-        print(user_msg_count)
 
 # 计算比例
 async def calculate_scores():

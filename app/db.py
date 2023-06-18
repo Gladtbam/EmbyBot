@@ -151,13 +151,20 @@ async def delete_ban():
 # 更新 分
 async def update_score(use_ratios, total_score):
     session = create_session()
+    user_score = {}
     for user_id, ratio in use_ratios.items():
-        exist_score = session.query(Score).get(user_id)         # 查询是否存在相同的记录
+        score_value = int(ratio * 0.5 * total_score)
+        if score_value != 0:
+            exist_score = session.query(Score).get(user_id)         # 查询是否存在相同的记录
 
-        if exist_score:
-            exist_score.value += int(ratio * 0.5 * total_score)
-        else:
-            new_score = Score(tgid=user_id, value=int(ratio * 0.5 * total_score))
-            session.add(new_score)
+            if exist_score:
+                exist_score.value += score_value
+            else:
+                new_score = Score(tgid=user_id, value=score_value)
+                session.add(new_score)
+
+            user_score[user_id] = score_value
     session.commit()
     session.close()
+
+    return user_score
