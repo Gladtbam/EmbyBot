@@ -1,15 +1,9 @@
-import yaml
 from datetime import datetime, timedelta
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, Boolean, delete
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
+from app.data import load_config
 
-
-# 加载Config
-def load_config():
-    with open('config.yaml', 'r') as config_file:
-        config = yaml.safe_load(config_file)
-    return config
 
 db_user = load_config()['DB_USER']
 db_password = load_config()['DB_PASSWORD']

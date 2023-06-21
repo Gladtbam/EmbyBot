@@ -1,7 +1,8 @@
 from telethon import events, types
-from app.db import load_config
+from app.data import load_config, save_user_msg_count
 
 group_id = load_config()['GROUP_ID']
+# file_path = 'user_msg_count.json'
 
 user_msg_count = {}
 
@@ -23,7 +24,7 @@ def score_commands(client):
                     msg_type = 'media'
             else:
                 msg_type = 'text'
-
+            
             if user_id in user_msg_count:
                 if msg_type in user_msg_count[user_id]:
                     user_msg_count[user_id][msg_type] += 1
@@ -31,6 +32,7 @@ def score_commands(client):
                     user_msg_count[user_id][msg_type] = 1
             else:
                 user_msg_count[user_id] = {msg_type: 1}
+            # await save_user_msg_count(file_path, user_msg_count)
 
 # 计算比例
 async def calculate_scores():

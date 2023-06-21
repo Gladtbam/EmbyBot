@@ -3,9 +3,9 @@ from telethon import events, Button
 from telethon.tl.types import ChatBannedRights, InputPeerChat
 from telethon.utils import get_display_name
 from asyncio import sleep
-from app.db import create_user, search_user, delete_user, search_code, delete_code, update_limit, change_score
+from app.db import create_user, search_user, delete_user, search_code, delete_code, update_limit, change_score, search_score
 from app.emby import New_User, User_Policy, Password, User_delete
-from app.db import load_config
+from app.data import load_config
 from app.regcode import verify_code
 import re
 
@@ -189,6 +189,7 @@ async def handle_delete(event):
 
 async def handle_me(event, tgid):
     user_result = await search_user(tgid)
+    score_result = await search_score(tgid)
     code_button = Button.inline("生成“码”", b"create_code")
     media_button = Button.inline("媒体库开关")
     renew_button = Button.inline("续期", b"renew")
@@ -204,6 +205,7 @@ async def handle_me(event, tgid):
 **用户名**: `{user_result[2]}`
 **有效期**: `{user_result[3]}`
 **Ban**: `{user_result[4]}`
+**积分**: `{score_result[1]}`
 '''
         await event.respond(message, parse_mode='Markdown', buttons=keyboard)
     else:

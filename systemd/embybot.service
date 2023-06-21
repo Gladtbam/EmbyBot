@@ -1,0 +1,13 @@
+[Unit]
+Description=Emby Bot From EmbyHub by Gladtbam
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory={work_dir}
+ExecStart=/usr/bin/python3 {work_dir}main.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

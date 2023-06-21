@@ -5,7 +5,7 @@ from app.regcode import generate_code, verify_code
 from app.emby import User_Policy
 from app.tg import handle_create_code
 from app.db import create_code, search_code, delete_code, search_user, update_limit, change_score
-from app.db import load_config
+from app.data import load_config
 
 admin_ids = load_config()['ADMIN_IDS']
 
