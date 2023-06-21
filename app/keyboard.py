@@ -2,7 +2,7 @@ from telethon import events, Button
 from asyncio import TimeoutError, wait_for, sleep
 from datetime import datetime, timedelta
 from app.regcode import generate_code, verify_code
-from app.emby import User_Policy
+from app.emby import User_Policy, Get_UserInfo
 from app.tg import handle_create_code
 from app.db import create_code, search_code, delete_code, search_user, update_limit, change_score
 from app.data import load_config
@@ -25,6 +25,8 @@ def register_callback(client):
             await handle_renew(event)
         elif data == 'renew_right':
             await handle_renew_right(event, tgid)
+        elif data == 'nsfw':
+            await handle_nsfw(event, tgid)
 
 async def handle_activation_code(event,tgid):
     if tgid in admin_ids:
@@ -66,6 +68,20 @@ async def handle_renew_right(event, tgid):
                 await User_Policy(result[1], BlockMedia)
         else:
             await event.respond(f'离到期还有 {remain_day.days} 天\n目前小于 7 天才允许续期')
+
+async def handle_nsfw(event, tgid):
+    result = await search_user(tgid)
+    if result is not None:
+        user_info = await Get_UserInfo(result[1])
+        print(user_info["Policy"]["BlockedMediaFolders"])
+        if len(user_info["Policy"]["BlockedMediaFolders"]) > 0:
+            BlockMedia = ()
+            await User_Policy(result[1], BlockMedia)
+            await event.respond('NSFW On')
+        else:
+            BlockMedia = ("Japan")
+            await User_Policy(result[1], BlockMedia)
+            await event.respond('NSFW OFF')
 
 async def wait_user_input(event):
     try:

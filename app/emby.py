@@ -67,6 +67,12 @@ async def User_Policy(embyid, BlockMeida):
     url = f"{emby_url}/emby/Users/{embyid}/Policy?api_key={api_key}"
     requests.post(url, json=data, headers=headers)
 
+async def Get_UserInfo(embyid):
+    url = f"{emby_url}/emby/Users/{embyid}?api_key={api_key}"
+    response = requests.get(url, headers=headers)
+    user_info = response.json()
+    return user_info
+
 async def Password(embyid):
     Pw = ''.join(random.choice(string.ascii_letters + string.digits + string.punctuation) for _ in range(12))
     data = {

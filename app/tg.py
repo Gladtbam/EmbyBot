@@ -151,9 +151,9 @@ async def handle_signup(event, tgid):
             message = '用户已存在'
         else:
             if tgid in admin_ids:
-                BlockMedia = ("Japan")
-            else:
                 BlockMedia = ()
+            else:
+                BlockMedia = ("Japan")
             embyid = await New_User(tgname)
             await create_user(tgid, embyid, tgname)
             await User_Policy(embyid, BlockMedia)
@@ -191,11 +191,11 @@ async def handle_me(event, tgid):
     user_result = await search_user(tgid)
     score_result = await search_score(tgid)
     code_button = Button.inline("生成“码”", b"create_code")
-    media_button = Button.inline("媒体库开关")
+    nsfw_button = Button.inline("NSFW开关", b"nsfw")
     renew_button = Button.inline("续期", b"renew")
     keyboard = [
         [code_button],
-        [media_button],
+        [nsfw_button],
         [renew_button]
     ]
     if user_result is not None:
