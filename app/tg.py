@@ -58,6 +58,12 @@ def register_commands(client, client_user):
             else:
                 await event.respond('仅私聊')
 
+        elif text.startswith('/info'):
+            if event.is_private or tgid in admin_ids:
+                await handle_info(event, tgid)
+            else:
+                await event.respond('仅私聊')
+
         elif text.startswith('/settle'):
             if tgid in admin_ids:
                 await handle_settle(client_user)
@@ -88,14 +94,18 @@ async def get_reply(event):
 
 async def handle_start(event):
     await event.respond('欢迎使用机器人！')
+    await handle_help(event)
 
 async def handle_help(event):
     message = f'''
-/help 帮助
-/signup 注册, 仅开放注册时使用。
-/code 使用注册码注册, 或者使用续期码续期。例: /code 123
-/del 删除 Emby 账户, 仅管理员使用, 需回复一个用户
-/me 查看个人消息(包含其它工具), 仅私聊
+/help - 帮助
+/signup - 注册, 仅开放注册时使用。
+/code - 使用注册码注册, 或者使用续期码续期。例: /code 123
+/del - 删除 Emby 账户, 仅管理员使用, 需回复一个用户
+/me - 查看 Emby 账户信息(包含其它工具), 仅私聊
+/info - 查看个人信息, 积分等
+/settle - 手动结算积分, 仅管理员使用
+/change - 手动修改积分, 仅管理员, 正数加负数减
     '''
     await event.respond(message, parse_mode='Markdown')
 
@@ -208,9 +218,9 @@ async def handle_delete(event):
     else:
         await event.respond('用户不存在')
 
+# 查看 Emby 信息
 async def handle_me(event, tgid):
     user_result = await search_user(tgid)
-    score_result = await search_score(tgid)
     code_button = Button.inline("生成“码”", b"create_code")
     nsfw_button = Button.inline("NSFW开关", b"nsfw")
     renew_button = Button.inline("续期", b"renew")
@@ -226,11 +236,21 @@ async def handle_me(event, tgid):
 **用户名**: `{user_result[2]}`
 **有效期**: `{user_result[3]}`
 **Ban**: `{user_result[4]}`
-**积分**: `{score_result[1]}`
 '''
         await event.respond(message, parse_mode='Markdown', buttons=keyboard)
     else:
         await event.respond('您尚未有账户')
+
+# 查看积分信息
+async def handle_info(event, tgid):
+    score_result = await search_score(tgid)
+    if score_result is None:
+        await change_score(tgid, 0)
+        message = f"**积分**: 0"
+        await event.respond(message, parse_mode='Markdown')
+    else:
+        message = f"**积分**: `{score_result[1]}`"
+        await event.respond(message, parse_mode='Markdown')
 
 # 发送积分更新消息
 async def send_scores_to_group(client_user, group_id, user_scores):

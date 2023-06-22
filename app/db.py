@@ -13,7 +13,7 @@ db_name = load_config()['DB_NAME']
 admin_ids = load_config()['ADMIN_IDS']
 
 # 创建数据库连接引擎
-engine = create_engine(f'mysql+mysqlconnector://{db_user}:{db_password}@{db_host}:3306/{db_name}')
+engine = create_engine(f'mysql+mysqlconnector://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}')
 
 # 创建会话工厂
 Session = sessionmaker(bind=engine)
