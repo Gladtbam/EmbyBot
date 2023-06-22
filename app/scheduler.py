@@ -23,14 +23,14 @@ async def delete_job():
     await Delete_Ban(ban_emby_ids)
 
 # @scheduler.scheduled_job('cron', hour=8, minute=0)
-async def score_job(client):
+async def score_job(client_user):
     user_ratios, total_score = await calculate_scores()
     user_score = await update_score(user_ratios, total_score)
-    # await send_scores_to_group(client, group_id, user_score)
+    await send_scores_to_group(client_user, group_id, user_score)
     user_msg_count.clear()                  # 清空字典
     # await save_user_msg_count(file_path, user_msg_count)
 
 # 启动任务
-def start_scheduler(client):
-    scheduler.add_job(score_job, 'cron', hour=8, minute=0, args=[client])
+def start_scheduler(client, client_user):
+    scheduler.add_job(score_job, 'cron', hour=8, minute=0, args=[client_user])
     scheduler.start()

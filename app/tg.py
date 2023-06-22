@@ -14,7 +14,7 @@ admin_ids = load_config()['ADMIN_IDS']
 signup_method = {"time": 0, "remain_num": 0.0}      # 注册方法
 
 # 注册命令处理逻辑
-def register_commands(client):
+def register_commands(client, client_user):
     @client.on(events.NewMessage)
     async def handle_commands(event):           #传递event
         text = event.message.text
@@ -212,14 +212,14 @@ async def handle_me(event, tgid):
         await event.respond('您尚未有账户')
 
 # 发送积分更新消息
-async def send_scores_to_group(client, chat_id, user_scores):
+async def send_scores_to_group(client_user, group_id, user_scores):
     message = "昨日积分获取情况：\n\n"
     for user_id, score_value in user_scores.items():
-        user = await client.get_entity(user_id)
+        user = await client_user.get_entity(user_id)
         username = get_display_name(user)
         message += f"@{username} 获得: {score_value} 积分\n"
     
-    await client.send_message(InputPeerChat(chat_id), message)
+    await client_user.send_message(group_id, message)
 
 # 计算总时间
 async def parse_duration(duration_str):

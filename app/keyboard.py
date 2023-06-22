@@ -9,7 +9,7 @@ from app.data import load_config
 
 admin_ids = load_config()['ADMIN_IDS']
 
-def register_callback(client):
+def register_callback(client, client_user):
     @client.on(events.CallbackQuery)
     async def handle_callback(event):
         tgid = event.sender_id

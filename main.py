@@ -14,11 +14,14 @@ bot_token = load_config()['BOT_TOKEN']
 # user_msg_count = load_user_msg_count(file_path)
 
 client = TelegramClient('bot', api_id, api_hash).start(bot_token=bot_token)
+client_user = TelegramClient('user', api_id, api_hash)
 
 # 启动客户端
-with client:
-    register_commands(client)
-    register_callback(client)
-    score_commands(client)
-    start_scheduler(client)
-    client.run_until_disconnected()
+with client_user:
+    with client:
+        register_commands(client, client_user)
+        register_callback(client, client_user)
+        score_commands(client)
+        start_scheduler(client, client_user)
+        client.run_until_disconnected()
+        client_user.run_until_disconnected()
