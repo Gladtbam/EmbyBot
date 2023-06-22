@@ -64,6 +64,16 @@ def register_commands(client, client_user):
             else:
                 await event.respond('您非管理员, 无权执行此命令')
 
+        elif text.startswith('/change'):
+            command, *args = text.split(' ')
+            if len(args) > 0:
+                if tgid in admin_ids:
+                    await handle_change_score(event, args[0])
+                else:
+                    await event.respond('您非管理员, 无权执行此命令')
+            else:
+                await event.respond('请回复一个值, 整数为+, 负数为-')
+
 async def get_reply(event):
     reply_message = await event.get_reply_message()
     reply_tgid = None
@@ -188,7 +198,7 @@ async def handle_delete(event):
     reply_tgid = await get_reply(event)
     result = await search_user(reply_tgid)
 
-    if result:
+    if result and reply_tgid is not None:
         await delete_user(reply_tgid)
         await User_delete(result[1])
         await event.respond(f'用户: {result[1]} 已删除')
@@ -266,6 +276,15 @@ async def parse_combined_duration(duration_str):
             total_seconds += seconds
 
     return total_seconds
+
+async def handle_change_score(event, score):
+    reply_tgid = await get_reply(event)
+    if reply_tgid is not None:
+        await change_score(reply_tgid, int(score))
+        result_score = await search_score(reply_tgid)
+        await event.respond(f'已更改, 当前用户积分为 {result_score[1]}')
+    else:
+        await event.respond(f'请回复一条消息')
 
 async def handle_settle(client_user):
     user_ratios, total_score = await calculate_scores()
