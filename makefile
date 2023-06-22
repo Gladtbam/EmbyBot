@@ -5,7 +5,7 @@ TARGET_FILE := /etc/systemd/system/embybot.service
 
 install:
         pip install -r requirements.txt
-        sed 's#{work_dir}#$(CURRENT_DIR)#g' $(TEMPLATE_FILE) > $(TARGET_FILE)
+        sed 's?{work_dir}?$(CURRENT_DIR)?g' $(TEMPLATE_FILE) > $(TARGET_FILE)
         systemctl daemon-reload
         systemctl enable --now embybot.service
         systemctl status embybot.service
