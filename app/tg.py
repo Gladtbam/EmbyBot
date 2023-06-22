@@ -1,15 +1,17 @@
 from datetime import datetime, timedelta
 from telethon import events, Button
-from telethon.tl.types import ChatBannedRights, InputPeerChat
+from telethon.tl.types import ChatBannedRights
 from telethon.utils import get_display_name
 from asyncio import sleep
-from app.db import create_user, search_user, delete_user, search_code, delete_code, update_limit, change_score, search_score
+from app.db import create_user, search_user, delete_user, search_code, delete_code, update_limit, change_score, search_score, update_score
 from app.emby import New_User, User_Policy, Password, User_delete
 from app.data import load_config
 from app.regcode import verify_code
+from app.tgscore import user_msg_count, calculate_scores
 import re
 
 admin_ids = load_config()['ADMIN_IDS']
+group_id = load_config()['GROUP_ID']
 
 signup_method = {"time": 0, "remain_num": 0.0}      # 注册方法
 
@@ -55,6 +57,12 @@ def register_commands(client, client_user):
                 await handle_me(event, tgid)
             else:
                 await event.respond('仅私聊')
+
+        elif text.startswith('/settle'):
+            if tgid in admin_ids:
+                await handle_settle(client_user)
+            else:
+                await event.respond('您非管理员, 无权执行此命令')
 
 async def get_reply(event):
     reply_message = await event.get_reply_message()
@@ -258,6 +266,12 @@ async def parse_combined_duration(duration_str):
             total_seconds += seconds
 
     return total_seconds
+
+async def handle_settle(client_user):
+    user_ratios, total_score = await calculate_scores()
+    user_score = await update_score(user_ratios, total_score)
+    await send_scores_to_group(client_user, group_id, user_score)
+    user_msg_count.clear()                  # 清空字典
 # 全体禁言
 async def mute_group(client, group_id):
     await client.edit_permissions(group_id, '*', ChatBannedRights(until_date=None, send_messages=False))

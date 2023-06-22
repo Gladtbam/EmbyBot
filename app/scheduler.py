@@ -7,7 +7,7 @@ from app.tg import send_scores_to_group
 from app.data import load_config, save_user_msg_count
 
 group_id = load_config()['GROUP_ID']
-file_path = 'user_msg_count.json'
+# file_path = 'user_msg_count.json'
 scheduler = AsyncIOScheduler()
 
 # 封禁过期用户
