@@ -12,6 +12,7 @@ import re
 
 admin_ids = load_config()['ADMIN_IDS']
 group_id = load_config()['GROUP_ID']
+renew_value = load_config()['Renew_Value']
 
 signup_method = {"time": 0, "remain_num": 0.0}      # 注册方法
 
@@ -156,12 +157,16 @@ async def handle_code(event, tgid, code):
                                 BlockMedia = ("Japan")
                                 await User_Policy(result_user[1], BlockMedia)
                         else:
-                            await update_limit(tgid)
-                            await change_score(tgid_code, -100)
-                            await delete_code(code)
-                            if result_user[4] is True:
-                                BlockMedia = ("Japan")
-                                await User_Policy(result_user[1], BlockMedia)
+                            score_result = await search_score(tgid_code)
+                            if int(score_result[1]) >= 100:
+                                await update_limit(tgid)
+                                await change_score(tgid_code, renew_value)
+                                await delete_code(code)
+                                if result_user[4] is True:
+                                    BlockMedia = ("Japan")
+                                    await User_Policy(result_user[1], BlockMedia)
+                            else:
+                                await event.respond('积分不足')
                     else:
                         await event.respond(f'离到期还有 {remain_day.days} 天\n目前小于 7 天才允许续期')
                 else:

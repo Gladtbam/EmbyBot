@@ -32,7 +32,7 @@ def score_commands(client):
                     user_msg_count[user_id][msg_type] = 1
             else:
                 user_msg_count[user_id] = {msg_type: 1}
-            print(user_msg_count)
+            # print(user_msg_count)
             # await save_user_msg_count(file_path, user_msg_count)
 
 # 计算比例

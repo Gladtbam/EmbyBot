@@ -4,10 +4,11 @@ from datetime import datetime, timedelta
 from app.regcode import generate_code, verify_code
 from app.emby import User_Policy, Get_UserInfo
 from app.tg import handle_create_code
-from app.db import create_code, search_code, delete_code, search_user, update_limit, change_score
+from app.db import create_code, search_code, delete_code, search_user, update_limit, change_score, search_score
 from app.data import load_config
 
 admin_ids = load_config()['ADMIN_IDS']
+renew_value = load_config()['Renew_Value']
 
 def register_callback(client, client_user):
     @client.on(events.CallbackQuery)
@@ -50,7 +51,7 @@ async def handle_renew(event):
     keyboard = [
         [right_button]
     ]
-    message = await event.respond('点击确认, 减除 100 积分续期', buttons=keyboard)
+    message = await event.respond(f'点击确认, 减除 {abs(renew_value)} 积分续期', buttons=keyboard)
     await sleep(10)
     await message.delete()
 
@@ -61,11 +62,15 @@ async def handle_renew_right(event, tgid):
         limitdate = result[3]
         remain_day = limitdate - current_time
         if remain_day.days <= 7:
-            await update_limit(tgid)
-            await change_score(tgid, -100)
-            if result[4] is True:                  # 解封Emby
-                BlockMedia = ("Japan")
-                await User_Policy(result[1], BlockMedia)
+            score_result = await search_score(tgid)
+            if int(score_result[1]) >= 100:
+                await update_limit(tgid)
+                await change_score(tgid, renew_value)
+                if result[4] is True:                  # 解封Emby
+                    BlockMedia = ("Japan")
+                    await User_Policy(result[1], BlockMedia)
+            else:
+                await event.respond('积分不足')
         else:
             await event.respond(f'离到期还有 {remain_day.days} 天\n目前小于 7 天才允许续期')
 
