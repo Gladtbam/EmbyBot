@@ -60,10 +60,10 @@ def register_commands(client, client_user):
                 await event.respond('仅私聊')
 
         elif text.startswith('/info'):
-            if event.is_private or tgid in admin_ids:
+            if tgid in admin_ids:
                 await handle_info(event, tgid)
             else:
-                await event.respond('仅私聊')
+                await event.respond('您非管理员, 无权执行此命令')
 
         elif text.startswith('/settle'):
             if tgid in admin_ids:
@@ -226,6 +226,7 @@ async def handle_delete(event):
 # 查看 Emby 信息
 async def handle_me(event, tgid):
     user_result = await search_user(tgid)
+    score_result = await search_score(tgid)
     code_button = Button.inline("生成“码”", b"create_code")
     nsfw_button = Button.inline("NSFW开关", b"nsfw")
     renew_button = Button.inline("续期", b"renew")
@@ -242,20 +243,40 @@ async def handle_me(event, tgid):
 **有效期**: `{user_result[3]}`
 **Ban**: `{user_result[4]}`
 '''
+    else:
+        message = f'**尚无 Emby 账户**\n'
+    if score_result is None:
+        await change_score(tgid, 0)
+        message += f'**积分**: 0'
+    else:
+        message += f"**积分**: `{score_result[1]}`"
+
+    if user_result is not None:
         await event.respond(message, parse_mode='Markdown', buttons=keyboard)
     else:
-        await event.respond('您尚未有账户')
+        await event.respond(message, parse_mode='Markdown')
 
 # 查看积分信息
 async def handle_info(event, tgid):
-    score_result = await search_score(tgid)
+    reply_tgid = await get_reply(event)
+    user_result = await search_user(reply_tgid)
+    score_result = await search_score(reply_tgid)
+    if user_result is not None:
+        message = f'''
+**Telegram ID**: `{user_result[0]}`
+**Emby ID**: `{user_result[1]}`
+**用户名**: `{user_result[2]}`
+**有效期**: `{user_result[3]}`
+**Ban**: `{user_result[4]}`
+'''
+    else:
+        message = f'**尚无 Emby 账户**\n'
     if score_result is None:
         await change_score(tgid, 0)
-        message = f"**积分**: 0"
-        await event.respond(message, parse_mode='Markdown')
+        message += f'**积分**: 0'
     else:
-        message = f"**积分**: `{score_result[1]}`"
-        await event.respond(message, parse_mode='Markdown')
+        message += f"**积分**: `{score_result[1]}`"
+    await event.respond(message, parse_mode='Markdown')
 
 # 发送积分更新消息
 async def send_scores_to_group(client_user, group_id, user_scores):
