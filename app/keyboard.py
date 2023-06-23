@@ -69,6 +69,7 @@ async def handle_renew_right(event, tgid):
                 if result[4] is True:                  # 解封Emby
                     BlockMedia = ("Japan")
                     await User_Policy(result[1], BlockMedia)
+                await event.respond('续期成功')
             else:
                 await event.respond('积分不足')
         else:

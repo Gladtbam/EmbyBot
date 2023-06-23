@@ -156,6 +156,7 @@ async def handle_code(event, tgid, code):
                             if result_user[4] is True:                  # 解封Emby
                                 BlockMedia = ("Japan")
                                 await User_Policy(result_user[1], BlockMedia)
+                            await event.respond('续期成功')
                         else:
                             score_result = await search_score(tgid_code)
                             if int(score_result[1]) >= 100:
@@ -165,6 +166,7 @@ async def handle_code(event, tgid, code):
                                 if result_user[4] is True:
                                     BlockMedia = ("Japan")
                                     await User_Policy(result_user[1], BlockMedia)
+                                await event.respond('续期成功')
                             else:
                                 await event.respond('积分不足')
                     else:
