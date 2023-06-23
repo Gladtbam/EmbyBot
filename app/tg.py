@@ -13,6 +13,7 @@ import re
 admin_ids = load_config()['ADMIN_IDS']
 group_id = load_config()['GROUP_ID']
 renew_value = load_config()['Renew_Value']
+bot_name = load_config()['BOT_NAME']
 
 signup_method = {"time": 0, "remain_num": 0.0}      # 注册方法
 
@@ -24,20 +25,20 @@ def register_commands(client, client_user):
 
         tgid = event.sender_id
         # 检查消息是否为命令
-        if text.startswith('/start'):
+        if re.match(fr'^/start({bot_name})?$', text):
             await handle_start(event)
 
-        elif text.startswith('/help'):
+        elif re.match(fr'^/help({bot_name})?$', text):
             if event.is_private:                        # 私聊
                 await handle_help(event)
             else:
                 await event.respond('仅私聊')
 
-        elif text.startswith('/signup'):
+        elif re.match(fr'^/signup({bot_name})?$', text):
             command, *args = text.split(' ')
             await handle_signup_method(event, tgid, args)
 
-        elif text.startswith('/code'):
+        elif re.match(fr'^/code({bot_name})?$', text):
             command, *args = text.split(' ')
             if len(args) > 0:
                 if event.is_private or tgid in admin_ids:
@@ -47,31 +48,31 @@ def register_commands(client, client_user):
             else:
                 await event.respond('请回复一个“码”')
 
-        elif text.startswith('/del'):
+        elif re.match(fr'^/del({bot_name})?$', text):
             if tgid in admin_ids:               # 判断是否在管理员列表中
                 await handle_delete(event)
             else:
                 await event.respond('您非管理员, 无权执行此命令')
 
-        elif text.startswith('/me'):
+        elif re.match(fr'^/me({bot_name})?$', text):
             if event.is_private or tgid in admin_ids:
                 await handle_me(event, tgid)
             else:
                 await event.respond('仅私聊')
 
-        elif text.startswith('/info'):
+        elif re.match(fr'^/info({bot_name})?$', text):
             if tgid in admin_ids:
                 await handle_info(event, tgid)
             else:
                 await event.respond('您非管理员, 无权执行此命令')
 
-        elif text.startswith('/settle'):
+        elif re.match(fr'^/settle({bot_name})?$', text):
             if tgid in admin_ids:
                 await handle_settle(client_user)
             else:
                 await event.respond('您非管理员, 无权执行此命令')
 
-        elif text.startswith('/change'):
+        elif re.match(fr'^/change({bot_name})?$', text):
             command, *args = text.split(' ')
             if len(args) > 0:
                 if tgid in admin_ids:
@@ -81,7 +82,7 @@ def register_commands(client, client_user):
             else:
                 await event.respond('请回复一个值, 整数为+, 负数为-')
 
-        elif text.startswith('/ex'):
+        elif re.match(fr'^/ex({bot_name})?$', text):
             await handle_exchange(event, client_user, tgid)
 
 async def get_reply(event):

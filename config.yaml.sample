@@ -2,6 +2,7 @@
 API_ID: ''
 API_HASH: ''
 BOT_TOKEN: ''
+BOT_NAME: ''
 ADMIN_IDS:                  # 管理员列表
   - xxx
   - xxx
@@ -17,3 +18,6 @@ DB_PORT: 3306
 # Emby
 EMBY_URL: ''
 API_KEY: ''
+
+# 积分
+Renew_Value: -100              # 续期所需积分(负数)
