@@ -12,6 +12,7 @@ me - 查看 Emby 账户 和 个人 信息(包含其它工具), 仅私聊
 info - 查看用户信息, 仅管理员使用
 settle - 手动结算积分, 仅管理员使用
 change - 手动修改积分, 仅管理员, 正数加负数减
+weblink - 查看 Emby 地址
 ```
   
 **对于管理员: 使用 /signup 整数开启限额注册, /signup 时间(h m s)开启限时注册。例如: /signup 10；/signup 1h2m**  

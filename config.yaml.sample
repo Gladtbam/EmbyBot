@@ -2,7 +2,7 @@
 API_ID: ''
 API_HASH: ''
 BOT_TOKEN: ''
-BOT_NAME: ''
+BOT_NAME: '@xxx'
 ADMIN_IDS:                  # 管理员列表
   - xxx
   - xxx

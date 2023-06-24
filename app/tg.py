@@ -14,6 +14,7 @@ admin_ids = load_config()['ADMIN_IDS']
 group_id = load_config()['GROUP_ID']
 renew_value = load_config()['Renew_Value']
 bot_name = load_config()['BOT_NAME']
+emby_url = load_config()['EMBY_URL']
 
 signup_method = {"time": 0, "remain_num": 0.0}      # 注册方法
 
@@ -81,6 +82,9 @@ def register_commands(client, client_user):
                     await event.respond('您非管理员, 无权执行此命令')
             else:
                 await event.respond('请回复一个值, 正整数为加, 负整数为减')
+
+        elif re.match(fr'^/weblink({bot_name})?$', text):
+            await event.respond(f'Emby 地址:\n`{emby_url}`')
 
         elif re.match(fr'^/ex({bot_name})?$', text):
             await handle_exchange(event, client_user, tgid)
