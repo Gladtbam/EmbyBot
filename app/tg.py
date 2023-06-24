@@ -80,7 +80,7 @@ def register_commands(client, client_user):
                 else:
                     await event.respond('您非管理员, 无权执行此命令')
             else:
-                await event.respond('请回复一个值, 整数为+, 负数为-')
+                await event.respond('请回复一个值, 正整数为加, 负整数为减')
 
         elif re.match(fr'^/ex({bot_name})?$', text):
             await handle_exchange(event, client_user, tgid)
@@ -286,10 +286,10 @@ async def send_scores_to_group(client_user, group_id, user_scores):
     message = "昨日积分获取情况：\n\n"
     for user_id, score_value in user_scores.items():
         user = await client_user.get_entity(user_id)
-        username = get_display_name(user)
-        message += f"@{username} 获得: {score_value} 积分\n"
+        username = user.first_name + ' ' + user.last_name if user.last_name else user.first_name
+        message += f"[{username}](tg://user?id={user_id}) 获得: {score_value} 积分\n"
     
-    await client_user.send_message(group_id, message)
+    await client_user.send_message(group_id, message, parse_mode='Markdown')
 
 # 计算总时间
 async def parse_duration(duration_str):
