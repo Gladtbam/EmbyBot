@@ -42,7 +42,6 @@ class Score(Base):
     __tablename__ = 'score'
     tgid = Column(String(50), primary_key=True)
     value = Column(Integer)
-    yn = Column(Boolean)
 
 # 创建数据表（如果不存在）
 Base.metadata.create_all(engine)
@@ -96,7 +95,7 @@ async def search_score(tgid):
     session = create_session()
     score_ = session.query(Score).filter(Score.tgid == tgid).first()
     session.close()
-    return [score_.tgid, score_.value, score_.yn] if score_ else None
+    return [score_.tgid, score_.value] if score_ else None
 
 # 删除用户(手动)
 async def delete_user(tgid):
@@ -145,14 +144,6 @@ async def ban_user():
     session.close()
 
     return emby_ids
-
-# 置换积分
-async def yn_score(tgid):
-    session = create_session()
-    exist_score = session.query(Score).get(tgid)
-    exist_score.yn = True
-    session.commit()
-    session.close()
 
 # 删除已封禁用户
 async def delete_ban():

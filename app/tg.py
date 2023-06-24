@@ -3,7 +3,7 @@ from telethon import events, Button, functions
 from telethon.tl.types import ChatBannedRights
 from telethon.utils import get_display_name, get_peer_id
 from asyncio import sleep
-from app.db import create_user, search_user, delete_user, search_code, delete_code, update_limit, change_score, search_score, update_score, yn_score
+from app.db import create_user, search_user, delete_user, search_code, delete_code, update_limit, change_score, search_score, update_score
 from app.emby import New_User, User_Policy, Password, User_delete
 from app.data import load_config
 from app.regcode import verify_code
@@ -89,9 +89,6 @@ def register_commands(client, client_user):
         elif re.match(r'^/.*@WuMingv2Bot\b', text):
             if tgid not in admin_ids:
                 await handle_forbid_wuming(event, client_user, tgid)
-
-        # elif re.match(fr'^/ex({bot_name})?$', text):
-        #     await handle_exchange(event, client_user, tgid)
 
 async def get_reply(event):
     reply_message = await event.get_reply_message()
@@ -360,29 +357,6 @@ async def mute_group(client, group_id):
 # 全体解禁
 async def unmute_group(client, group_id):
     await client.edit_permissions(group_id, '*', ChatBannedRights(until_date=None, send_messages=True))
-
-async def handle_exchange(event, client_user, tgid):
-    reply_message = await event.get_reply_message()
-    message_id = reply_message.id
-    forward_id = reply_message.fwd_from.from_id.user_id
-    forward_message = reply_message.message
-    if forward_id == 5400993444:
-        org_score = re.search(r"群积分：(\d+)", forward_message)
-        score = int(org_score.group(1))
-        back_score = int(score / 10)
-        message = f"/minus {score}"
-
-        score_result = await search_score(tgid)
-        if score_result is not None:
-            if score_result[2] is not True:
-                await client_user(functions.messages.SendMessageRequest(peer=get_peer_id(group_id),message=message,reply_to_msg_id=message_id))
-                await change_score(tgid, back_score)
-                await yn_score(tgid)
-            else:
-                await event.respond('已兑换, 不可重复兑换')
-        else:
-            await change_score(tgid, 0)
-            await event.respond('请重试')
 
 async def handle_forbid_wuming(event, client_user, tgid):
     message_id = event.message.id
