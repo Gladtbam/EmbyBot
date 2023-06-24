@@ -237,10 +237,12 @@ async def handle_me(event, tgid):
     code_button = Button.inline("生成“码”", b"create_code")
     nsfw_button = Button.inline("NSFW开关", b"nsfw")
     renew_button = Button.inline("续期", b"renew")
+    resetpw_button = Button.inline("忘记密码", b"reset_pw")
     keyboard = [
         [code_button],
         [nsfw_button],
-        [renew_button]
+        [renew_button],
+        [resetpw_button]
     ]
     if user_result is not None:
         message = f'''

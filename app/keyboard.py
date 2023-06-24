@@ -2,7 +2,7 @@ from telethon import events, Button
 from asyncio import TimeoutError, wait_for, sleep
 from datetime import datetime, timedelta
 from app.regcode import generate_code, verify_code
-from app.emby import User_Policy, Get_UserInfo
+from app.emby import User_Policy, Get_UserInfo, Password
 from app.tg import handle_create_code
 from app.db import create_code, search_code, delete_code, search_user, update_limit, change_score, search_score
 from app.data import load_config
@@ -28,6 +28,8 @@ def register_callback(client, client_user):
             await handle_renew_right(event, tgid)
         elif data == 'nsfw':
             await handle_nsfw(event, tgid)
+        elif data == 'reset_pw':
+            await handle_resetpw(event, tgid)
 
 async def handle_activation_code(event,tgid):
     if tgid in admin_ids:
@@ -74,6 +76,11 @@ async def handle_renew_right(event, tgid):
                 await event.respond('积分不足')
         else:
             await event.respond(f'离到期还有 {remain_day.days} 天\n目前小于 7 天才允许续期')
+
+async def handle_resetpw(event, tgid):
+    result = await search_user(tgid)
+    Pw = await Password(result[1])
+    await event.respond(f"密码已重置\n当前密码为: `{Pw}`\n请及时修改密码")
 
 async def handle_nsfw(event, tgid):
     result = await search_user(tgid)
