@@ -86,8 +86,12 @@ def register_commands(client, client_user):
         elif re.match(fr'^/weblink({bot_name})?$', text):
             await event.respond(f'Emby 地址:\n`{emby_url}`')
 
-        elif re.match(fr'^/ex({bot_name})?$', text):
-            await handle_exchange(event, client_user, tgid)
+        elif re.match(r'^/.*@WuMingv2Bot\b', text):
+            if tgid not in admin_ids:
+                await handle_forbid_wuming(event, client_user, tgid)
+
+        # elif re.match(fr'^/ex({bot_name})?$', text):
+        #     await handle_exchange(event, client_user, tgid)
 
 async def get_reply(event):
     reply_message = await event.get_reply_message()
@@ -379,3 +383,8 @@ async def handle_exchange(event, client_user, tgid):
         else:
             await change_score(tgid, 0)
             await event.respond('请重试')
+
+async def handle_forbid_wuming(event, client_user, tgid):
+    message_id = event.message.id
+    message = f"/warn"
+    await client_user(functions.messages.SendMessageRequest(peer=get_peer_id(group_id),message=message,reply_to_msg_id=message_id))
