@@ -9,6 +9,7 @@ from app.data import load_config
 
 admin_ids = load_config()['ADMIN_IDS']
 renew_value = load_config()['Renew_Value']
+emby_url = load_config()['EMBY_URL']
 
 def register_callback(client, client_user):
     @client.on(events.CallbackQuery)
@@ -30,6 +31,8 @@ def register_callback(client, client_user):
             await handle_nsfw(event, tgid)
         elif data == 'reset_pw':
             await handle_resetpw(event, tgid)
+        elif data == 'weblink':
+            await event.respond(f'Emby 地址:\n`{emby_url}`')
 
 async def handle_activation_code(event,tgid):
     if tgid in admin_ids:

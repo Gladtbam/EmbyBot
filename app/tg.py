@@ -14,7 +14,6 @@ admin_ids = load_config()['ADMIN_IDS']
 group_id = load_config()['GROUP_ID']
 renew_value = load_config()['Renew_Value']
 bot_name = load_config()['BOT_NAME']
-emby_url = load_config()['EMBY_URL']
 
 signup_method = {"time": 0, "remain_num": 0.0}      # 注册方法
 
@@ -82,9 +81,6 @@ def register_commands(client, client_user):
                     await event.reply('您非管理员, 无权执行此命令')
             else:
                 await event.reply('请回复一个值, 正整数为加, 负整数为减')
-
-        elif re.match(fr'^/weblink({bot_name})?$', text):
-            await event.reply(f'Emby 地址:\n`{emby_url}`')
 
         elif re.match(r'^/.*@WuMingv2Bot\b', text):
             if tgid not in admin_ids:
@@ -239,11 +235,13 @@ async def handle_me(event, tgid):
     nsfw_button = Button.inline("NSFW开关", b"nsfw")
     renew_button = Button.inline("续期", b"renew")
     resetpw_button = Button.inline("忘记密码", b"reset_pw")
+    weblink_button = Button.inline("线路查询", b"weblink")
     keyboard = [
         [code_button],
         [nsfw_button],
         [renew_button],
-        [resetpw_button]
+        [resetpw_button],
+        [weblink_button]
     ]
     if user_result is not None:
         message = f'''
