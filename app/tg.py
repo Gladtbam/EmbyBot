@@ -7,7 +7,7 @@ from app.db import create_user, search_user, delete_user, search_code, delete_co
 from app.emby import New_User, User_Policy, Password, User_delete
 from app.data import load_config
 from app.regcode import verify_code
-from app.tgscore import user_msg_count, calculate_scores
+from app.tgscore import user_msg_count, calculate_scores, handle_checkin
 import re
 
 admin_ids = load_config()['ADMIN_IDS']
@@ -81,6 +81,9 @@ def register_commands(client, client_user):
                     await event.reply('您非管理员, 无权执行此命令')
             else:
                 await event.reply('请回复一个值, 正整数为加, 负整数为减')
+
+        elif re.match(fr'^/checkin({bot_name})?$', text):
+            await handle_checkin(event, client, tgid)
 
         elif re.match(r'^/.*@WuMingv2Bot\b', text):
             if tgid not in admin_ids:

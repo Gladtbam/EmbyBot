@@ -42,6 +42,8 @@ class Score(Base):
     __tablename__ = 'score'
     tgid = Column(String(50), primary_key=True)
     value = Column(Integer)
+    checkin = Column(Integer)
+    checkintime = Column(DateTime)
 
 # 创建数据表（如果不存在）
 Base.metadata.create_all(engine)
@@ -95,7 +97,7 @@ async def search_score(tgid):
     session = create_session()
     score_ = session.query(Score).filter(Score.tgid == tgid).first()
     session.close()
-    return [score_.tgid, score_.value] if score_ else None
+    return [score_.tgid, score_.value, score_.checkin, score_.checkintime] if score_ else None
 
 # 删除用户(手动)
 async def delete_user(tgid):
@@ -121,7 +123,24 @@ async def change_score(tgid, score_value):
     if exist_score:
         exist_score.value += score_value
     else:
-        new_score = Score(tgid=tgid, value=score_value)
+        new_score = Score(tgid=tgid, value=score_value, checkin=0)
+        session.add(new_score)
+    session.commit()
+    session.close()
+
+# 签到天数
+async def update_checkin(tgid):
+    session = create_session()
+    result = session.query(Score).get(tgid)
+    current_time = datetime.now()
+    if result:
+        result.checkintime = current_time
+        if result.checkin == 7:
+            result.checkin = 1
+        else:
+            result.checkin += 1
+    else:
+        new_score = Score(tgid=tgid, value=0, checkin=1, checkintime=current_time)
         session.add(new_score)
     session.commit()
     session.close()
@@ -162,7 +181,7 @@ async def delete_ban():
     session.close()
     return ban_emby_ids
 
-# 更新 分
+# 更新 分(积分结算)
 async def update_score(use_ratios, total_score):
     session = create_session()
     user_score = {}
@@ -174,7 +193,7 @@ async def update_score(use_ratios, total_score):
             if exist_score:
                 exist_score.value += score_value
             else:
-                new_score = Score(tgid=user_id, value=score_value)
+                new_score = Score(tgid=user_id, value=score_value, checkin=0)
                 session.add(new_score)
 
             user_score[user_id] = score_value
@@ -184,17 +203,17 @@ async def update_score(use_ratios, total_score):
     return user_score
 
 # 更新续期时间和解封
-async def update_limit(tgid):
+async def update_limit(tgid, days=30):
     session = create_session()
     current_time = datetime.now()
-    update_time = current_time + timedelta(days=30)
+    update_time = current_time + timedelta(days=days)
 
     user = session.query(User).get(tgid)
     if user.ban == True:
         user.ban = False
         user.limitdate = update_time
     else:
-        user.limitdate = user.limitdate + timedelta(days=30)
+        user.limitdate = user.limitdate + timedelta(days=days)
 
     session.commit()
     session.close()
