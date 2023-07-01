@@ -205,17 +205,6 @@ async def handle_signup(event, tgid):
     
     await event.respond(message)
 
-async def handle_create_code(event):
-    activation_button = Button.inline("注册码", b"activation_code")
-    renew_button = Button.inline("续期码", b"renew_code")
-    keyboard = [
-        [activation_button],
-        [renew_button]
-    ]
-    message = await event.respond('1. 非特殊情况, 非管理员只能使用续期码\n2. 续期码创建在使用之后才扣除积分\n3. 由于与生成用户(非管理员)绑定, 因此不要随便公布你的续期码', buttons=keyboard)
-    await sleep(10)
-    await message.delete()
-
 async def handle_delete(event):
     reply_tgid = await get_reply(event)
     result = await search_user(reply_tgid)
@@ -231,17 +220,16 @@ async def handle_delete(event):
 async def handle_me(event, tgid):
     user_result = await search_user(tgid)
     score_result = await search_score(tgid)
-    code_button = Button.inline("生成“码”", b"create_code")
-    nsfw_button = Button.inline("NSFW开关", b"nsfw")
-    renew_button = Button.inline("续期", b"renew")
-    resetpw_button = Button.inline("忘记密码", b"reset_pw")
-    weblink_button = Button.inline("线路查询", b"weblink")
     keyboard = [
-        [code_button],
-        [nsfw_button],
-        [renew_button],
-        [resetpw_button],
-        [weblink_button]
+        [
+            Button.inline("生成“码”", b"create_code"),
+            Button.inline("NSFW开关", b"nsfw"),
+            Button.inline("续期", b"renew")
+        ],
+        [
+            Button.inline("忘记密码", b"reset_pw"),
+            Button.inline("线路查询", b"weblink")
+        ]
     ]
     if user_result is not None:
         message = f'''

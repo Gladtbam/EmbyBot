@@ -3,7 +3,6 @@ from asyncio import TimeoutError, wait_for, sleep
 from datetime import datetime, timedelta
 from app.regcode import generate_code, verify_code
 from app.emby import User_Policy, Get_UserInfo, Password
-from app.tg import handle_create_code
 from app.db import create_code, search_code, delete_code, search_user, update_limit, change_score, search_score
 from app.data import load_config
 
@@ -33,6 +32,15 @@ def register_callback(client, client_user):
             await handle_resetpw(event, tgid)
         elif data == 'weblink':
             await event.respond(f'Emby 地址:\n`{emby_url}`')
+
+async def handle_create_code(event):
+    keyboard = [
+        Button.inline("注册码", b"activation_code"),
+        Button.inline("续期码", b"renew_code")
+    ]
+    message = await event.respond('1. 非特殊情况, 非管理员只能使用续期码\n2. 续期码创建在使用之后才扣除积分\n3. 由于与生成用户(非管理员)绑定, 因此不要随便公布你的续期码', buttons=keyboard)
+    await sleep(10)
+    await message.delete()
 
 async def handle_activation_code(event,tgid):
     if tgid in admin_ids:
