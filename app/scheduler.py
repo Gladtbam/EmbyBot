@@ -33,4 +33,5 @@ async def score_job(client_user):
 # 启动任务
 def start_scheduler(client, client_user):
     scheduler.add_job(score_job, 'cron', hour=8, minute=0, args=[client_user])
+    scheduler.add_job(score_job, 'cron', hour=20, minute=0, args=[client_user])
     scheduler.start()
