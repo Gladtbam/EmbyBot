@@ -3,7 +3,7 @@ from telethon import events, Button, functions
 from telethon.tl.types import ChatBannedRights
 from telethon.utils import get_display_name, get_peer_id
 from asyncio import sleep
-from app.db import create_user, search_user, delete_user, search_code, delete_code, update_limit, change_score, search_score, update_score
+from app.db import create_user, search_user, delete_user, search_code, delete_code, update_limit, change_score, search_score, update_score, init_renew_value
 from app.emby import New_User, User_Policy, Password, User_delete
 from app.data import load_config
 from app.regcode import verify_code
@@ -12,7 +12,8 @@ import re
 
 admin_ids = load_config()['ADMIN_IDS']
 group_id = load_config()['GROUP_ID']
-renew_value = load_config()['Renew_Value']
+# renew_value = load_config()['Renew_Value']
+renew_value = -(int(init_renew_value()))
 bot_name = load_config()['BOT_NAME']
 
 signup_method = {"time": 0, "remain_num": 0.0}      # 注册方法

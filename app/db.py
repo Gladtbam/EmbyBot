@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, Boolean, delete
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
+from pandas import read_sql
 from app.data import load_config
 
 
@@ -217,3 +218,20 @@ async def update_limit(tgid, days=30):
 
     session.commit()
     session.close()
+
+def init_renew_value():
+    session = create_session()
+    # scores = session.query(Score).all()
+    # value_list = [scores.value for scores in scores]
+    query = session.query(Score.value)
+    df = read_sql(query.statement, query.session.bind)
+    non_zero_values = df[df['value'] != 0]['value']
+    mean_value = non_zero_values.mean()
+    median_value = non_zero_values.median()
+    variance_value = non_zero_values.var()
+
+    print("平均数:", mean_value)
+    print("中位数:", median_value)
+    print("方差:", variance_value)
+    session.close()
+    return mean_value

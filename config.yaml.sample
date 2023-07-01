@@ -18,6 +18,3 @@ DB_PORT: 3306
 # Emby
 EMBY_URL: ''
 API_KEY: ''
-
-# 积分
-Renew_Value: -100              # 续期所需积分(负数)
