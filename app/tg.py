@@ -86,6 +86,12 @@ def register_commands(client, client_user):
         elif re.match(fr'^/checkin({bot_name})?$', text):
             await handle_checkin(event, client, tgid)
 
+        elif re.match(fr'^/getrenew({bot_name})?$', text):
+            if event.is_private or tgid in admin_ids:
+                await event.respond(f'今日续期积分: {abs(renew_value)}')
+            else:
+                await event.reply('仅私聊')
+
         elif re.match(r'^/.*@WuMingv2Bot\b', text):
             if tgid not in admin_ids:
                 await handle_forbid_wuming(event, client_user, tgid)
@@ -105,14 +111,16 @@ async def handle_start(event):
 
 async def handle_help(event):
     message = f'''
-/help - 帮助
+/help - [私聊]帮助
+/checkin - 签到
 /signup - 注册, 仅开放注册时使用。
-/code - 使用注册码注册, 或者使用续期码续期。例: /code 123
-/del - 删除 Emby 账户, 仅管理员使用, 需回复一个用户
-/me - 查看 Emby 账户信息(包含其它工具), 仅私聊
-/info - 查看个人信息, 积分等
-/settle - 手动结算积分, 仅管理员使用
-/change - 手动修改积分, 仅管理员, 正数加负数减
+/code - [私聊]使用注册码注册, 或者使用续期码续期。例: /code 123
+/del - [管理员]删除 Emby 账户, 需回复一个用户
+/me - [私聊]查看 Emby 账户 和 个人 信息(包含其它工具)
+/info - [管理员]查看用户信息
+/settle - [管理员]手动结算积分
+/change - [管理员]手动修改积分, 正数加负数减
+/getrenew - [私聊]获取今日续期所需积分
     '''
     await event.respond(message, parse_mode='Markdown')
 
