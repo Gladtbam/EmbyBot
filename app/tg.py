@@ -33,7 +33,7 @@ def register_commands(client, client_user):
             if event.is_private:                        # 私聊
                 await handle_help(event)
             else:
-                await event.respond('仅私聊')
+                await event.reply('仅私聊')
 
         elif re.match(fr'^/signup({bot_name})?$', text):
             command, *args = text.split(' ')
@@ -45,33 +45,33 @@ def register_commands(client, client_user):
                 if event.is_private or tgid in admin_ids:
                     await handle_code(event, tgid, args[0])
                 else:
-                    await event.respond('仅私聊')
+                    await event.reply('仅私聊')
             else:
-                await event.respond('请回复一个“码”')
+                await event.reply('请回复一个“码”')
 
         elif re.match(fr'^/del({bot_name})?$', text):
             if tgid in admin_ids:               # 判断是否在管理员列表中
                 await handle_delete(event)
             else:
-                await event.respond('您非管理员, 无权执行此命令')
+                await event.reply('您非管理员, 无权执行此命令')
 
         elif re.match(fr'^/me({bot_name})?$', text):
             if event.is_private or tgid in admin_ids:
                 await handle_me(event, tgid)
             else:
-                await event.respond('仅私聊')
+                await event.reply('仅私聊')
 
         elif re.match(fr'^/info({bot_name})?$', text):
             if tgid in admin_ids:
                 await handle_info(event, tgid)
             else:
-                await event.respond('您非管理员, 无权执行此命令')
+                await event.reply('您非管理员, 无权执行此命令')
 
         elif re.match(fr'^/settle({bot_name})?$', text):
             if tgid in admin_ids:
                 await handle_settle(client_user)
             else:
-                await event.respond('您非管理员, 无权执行此命令')
+                await event.reply('您非管理员, 无权执行此命令')
 
         elif re.match(fr'^/change({bot_name})?$', text):
             command, *args = text.split(' ')
@@ -79,12 +79,12 @@ def register_commands(client, client_user):
                 if tgid in admin_ids:
                     await handle_change_score(event, args[0])
                 else:
-                    await event.respond('您非管理员, 无权执行此命令')
+                    await event.reply('您非管理员, 无权执行此命令')
             else:
-                await event.respond('请回复一个值, 正整数为加, 负整数为减')
+                await event.reply('请回复一个值, 正整数为加, 负整数为减')
 
         elif re.match(fr'^/weblink({bot_name})?$', text):
-            await event.respond(f'Emby 地址:\n`{emby_url}`')
+            await event.reply(f'Emby 地址:\n`{emby_url}`')
 
         elif re.match(r'^/.*@WuMingv2Bot\b', text):
             if tgid not in admin_ids:
@@ -96,7 +96,7 @@ async def get_reply(event):
     if reply_message:
         reply_tgid = reply_message.sender_id
     else:
-        await event.respond('请回复一条消息')
+        await event.reply('请回复一条消息')
     return reply_tgid
 
 async def handle_start(event):
@@ -134,7 +134,7 @@ async def handle_signup_method(event, tgid, args):
         elif float(signup_method['time']) > current_time:
             await handle_signup(event, tgid)
         else:
-            await event.respond('未开放注册！！！\n如果有注册码, 请通过 `/code` 使用注册码注册')
+            await event.reply('未开放注册！！！\n如果有注册码, 请通过 `/code` 使用注册码注册')
 
 async def handle_code(event, tgid, code):
     result = await search_code(code)
@@ -227,9 +227,9 @@ async def handle_delete(event):
     if result and reply_tgid is not None:
         await delete_user(reply_tgid)
         await User_delete(result[1])
-        await event.respond(f'用户: {result[1]} 已删除')
+        await event.reply(f'用户: {result[1]} 已删除')
     else:
-        await event.respond('用户不存在')
+        await event.reply('用户不存在')
 
 # 查看 Emby 信息
 async def handle_me(event, tgid):
@@ -286,7 +286,7 @@ async def handle_info(event, tgid):
         message += f'**积分**: 0'
     else:
         message += f"**积分**: `{score_result[1]}`"
-    await event.respond(message, parse_mode='Markdown')
+    await event.reply(message, parse_mode='Markdown')
 
 # 发送积分更新消息
 async def send_scores_to_group(client_user, group_id, user_scores):
@@ -341,9 +341,9 @@ async def handle_change_score(event, score):
     if reply_tgid is not None:
         await change_score(reply_tgid, int(score))
         result_score = await search_score(reply_tgid)
-        await event.respond(f'已更改, 当前用户积分为 {result_score[1]}')
+        await event.reply(f'已更改, 当前用户积分为 {result_score[1]}')
     else:
-        await event.respond(f'请回复一条消息')
+        await event.reply(f'请回复一条消息')
 
 async def handle_settle(client_user):
     user_ratios, total_score = await calculate_scores()
