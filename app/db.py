@@ -124,7 +124,7 @@ async def change_score(tgid, score_value):
     if exist_score:
         exist_score.value += score_value
     else:
-        new_score = Score(tgid=tgid, value=score_value, checkin=0)
+        new_score = Score(tgid=tgid, value=score_value, checkin=0, checkintime='1970-01-01 08:00:00')
         session.add(new_score)
     session.commit()
     session.close()
@@ -194,7 +194,7 @@ async def update_score(use_ratios, total_score):
             if exist_score:
                 exist_score.value += score_value
             else:
-                new_score = Score(tgid=user_id, value=score_value, checkin=0)
+                new_score = Score(tgid=user_id, value=score_value, checkin=0, checkintime='1970-01-01 08:00:00')
                 session.add(new_score)
 
             user_score[user_id] = score_value
