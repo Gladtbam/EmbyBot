@@ -1,7 +1,7 @@
 from telethon import events, types
 from datetime import datetime, timedelta
 from app.data import load_config
-from app.db import search_score, change_score, update_checkin, update_limit, create_code
+from app.db import search_score, search_user, change_score, update_checkin, update_limit, create_code, init_renew_value
 from app.regcode import generate_code
 from random import random, randint, choices
 
@@ -71,13 +71,14 @@ async def handle_checkin(event, client, tgid):
     current_time = datetime.now()
     result = await search_score(tgid)
     # diff_time = current_time - result[3]
-    if result is None or (current_time - result[3]) >= timedelta(days=1):
+    if result is None or result[3] is None or (current_time - result[3]) >= timedelta(days=1):
         score_value = randint(-5,10)
         if result is None or result[2] < 7:
             await change_score(tgid, score_value)
-            await update_checkin(tgid)
             await event.reply(f'签到成功, 获得 {score_value} 分')
         else:
+            user_result = await search_user(tgid)
+            renew_value = int(init_renew_value())
             options = ['signup_code', 'renew_code','renew_7', 'renew_1', 'x2']
             probabilities = [0.03, 0.05, 0.1, 0.2, 0.62]
             roulette = choices(options, weights=probabilities, k=1)[0]
@@ -87,11 +88,21 @@ async def handle_checkin(event, client, tgid):
                 await update_checkin(tgid)
                 await event.reply(f'积分翻倍,获得 {score_value} 分')
             elif roulette == 'renew_1':
-                await update_limit(tgid, days=1)
-                await event.reply('增加续期时间 1 天')
+                if user_result is not None:
+                    await update_limit(tgid, days=1)
+                    await event.reply('增加续期时间 1 天')
+                else:
+                    renew_value_1 = int(renew_value / 30)
+                    await change_score(tgid, renew_value_1)
+                    await event.reply(f'尚无账户, 已等比转为积分, 获得 {renew_value_1}')
             elif roulette == 'renew_7':
-                await update_limit(tgid, days=7)
-                await event.reply('增加续期时间 7 天')
+                if user_result is not None:
+                    await update_limit(tgid, days=7)
+                    await event.reply('增加续期时间 7 天')
+                else:
+                    renew_value_7 = int(renew_value / 30 * 7)
+                    await change_score(tgid, renew_value_7)
+                    await event.reply(f'尚无账户, 已等比转为积分, 获得 {renew_value_7}')
             elif roulette == 'renew_code':
                 code, public_key, sha256_hash, data = await generate_code(admin_ids[0], 0)
                 await create_code(code, public_key, sha256_hash, data)
@@ -102,5 +113,6 @@ async def handle_checkin(event, client, tgid):
                 await create_code(code, public_key, sha256_hash, data)
                 await event.reply('获得注册码, 已私聊发送')
                 await client.send_message(tgid, f'注册码:\n{code}')
+        await update_checkin(tgid)
     else:
         await event.reply('已签到, 禁止重复签到')

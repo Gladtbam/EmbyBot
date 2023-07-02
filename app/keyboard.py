@@ -1,13 +1,13 @@
 from telethon import events, Button
-from asyncio import TimeoutError, wait_for, sleep
-from datetime import datetime, timedelta
-from app.regcode import generate_code, verify_code
+from asyncio import sleep
+from datetime import datetime
+from app.regcode import generate_code
 from app.emby import User_Policy, Get_UserInfo, Password
-from app.db import create_code, search_code, delete_code, search_user, update_limit, change_score, search_score
+from app.db import create_code, search_user, update_limit, change_score, search_score, init_renew_value
 from app.data import load_config
-from app.tg import renew_value
 
 admin_ids = load_config()['ADMIN_IDS']
+renew_value = -(int(init_renew_value()))
 # renew_value = load_config()['Renew_Value']
 emby_url = load_config()['EMBY_URL']
 
