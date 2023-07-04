@@ -72,7 +72,7 @@ async def handle_checkin(event, client, tgid):
     result = await search_score(tgid)
     # diff_time = current_time - result[3]
     if result is None or result[3] is None or (current_time - result[3]) >= timedelta(days=1):
-        score_value = randint(-2,10)
+        score_value = randint(-2,5)
         if result is None or result[2] < 7:
             await change_score(tgid, score_value)
             await event.reply(f'签到成功, 获得 {score_value} 分')
