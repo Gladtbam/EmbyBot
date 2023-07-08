@@ -33,6 +33,8 @@ def register_callback(client, client_user):
             await handle_resetpw(event, tgid)
         elif data == 'weblink':
             await event.respond(f'Emby 地址:\n`{emby_url}`')
+        elif data == 'get_renew':
+            await event.respond(f'今日续期积分: {abs(renew_value)}')
 
 async def handle_create_code(event):
     keyboard = [

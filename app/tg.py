@@ -84,12 +84,6 @@ def register_commands(client, client_user):
         elif re.match(fr'^/checkin({bot_name})?$', text):
             await handle_checkin(event, client, tgid)
 
-        elif re.match(fr'^/getrenew({bot_name})?$', text):
-            if event.is_private or tgid in admin_ids:
-                await event.respond(f'今日续期积分: {abs(renew_value)}')
-            else:
-                await event.reply('仅私聊')
-
         elif re.match(r'^/.*@WuMingv2Bot\b', text):
             if tgid not in admin_ids:
                 await handle_forbid_wuming(event, client_user, tgid)
@@ -238,7 +232,8 @@ async def handle_me(event, tgid):
         ],
         [
             Button.inline("忘记密码", b"reset_pw"),
-            Button.inline("线路查询", b"weblink")
+            Button.inline("线路查询", b"weblink"),
+            Button.inline("查询续期积分", b"get_renew")
         ]
     ]
     if user_result is not None:

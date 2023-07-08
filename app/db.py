@@ -234,4 +234,4 @@ def init_renew_value():
     print("中位数:", median_value)
     print("方差:", variance_value)
     session.close()
-    return mean_value
+    return mean_value if mean_value else 0
