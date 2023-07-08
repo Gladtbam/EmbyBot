@@ -33,15 +33,16 @@ def score_commands(client):
                 msg_type = 'text'
             
             if user_id not in admin_ids and (user_id != user_id_old):
-                if user_id in user_msg_count:
-                    if msg_type in user_msg_count[user_id]:
-                        user_msg_count[user_id][msg_type] += 1
+                if not event.message.text.startswith('/'):
+                    if user_id in user_msg_count:
+                        if msg_type in user_msg_count[user_id]:
+                            user_msg_count[user_id][msg_type] += 1
+                        else:
+                            user_msg_count[user_id][msg_type] = 1
                     else:
-                        user_msg_count[user_id][msg_type] = 1
-                else:
-                    user_msg_count[user_id] = {msg_type: 1}
+                        user_msg_count[user_id] = {msg_type: 1}
 
-                user_id_old = user_id
+                    user_id_old = user_id
                 # print(user_msg_count)
             # await save_user_msg_count(file_path, user_msg_count)
 
