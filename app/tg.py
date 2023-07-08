@@ -8,7 +8,6 @@ from app.emby import New_User, User_Policy, Password, User_delete
 from app.data import load_config
 from app.regcode import verify_code
 from app.tgscore import user_msg_count, calculate_scores, handle_checkin
-from app.arr.radarr import movie_lookup
 import re
 
 admin_ids = load_config()['ADMIN_IDS']
@@ -90,12 +89,6 @@ def register_commands(client, client_user):
                 await event.respond(f'今日续期积分: {abs(renew_value)}')
             else:
                 await event.reply('仅私聊')
-
-        elif re.match(fr'^/search({bot_name})?\s+(.*)$', text):
-            if len(args) > 0:
-                await handld_search(event, client, args)
-            else:
-                await event.reply('指令错误, 请查看 WiKI')
 
         elif re.match(r'^/.*@WuMingv2Bot\b', text):
             if tgid not in admin_ids:
@@ -353,15 +346,6 @@ async def handle_settle(client_user):
     user_score = await update_score(user_ratios, total_score)
     await send_scores_to_group(client_user, group_id, user_score)
     user_msg_count.clear()                  # 清空字典
-
-# 求片
-async def handld_search(event, client, param):
-    if param[0] == 'tv':
-        await event.reply('剧集, 未完成')
-    elif param[0] == 'movie':
-        list = await movie_lookup(param[1])
-        print(list)
-        
 
 # 全体禁言
 async def mute_group(client, group_id):

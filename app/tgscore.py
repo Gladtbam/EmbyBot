@@ -10,10 +10,12 @@ admin_ids = load_config()['ADMIN_IDS']
 # file_path = 'user_msg_count.json'
 
 user_msg_count = {}
+user_id_old = None
 
 def score_commands(client):
     @client.on(events.NewMessage(chats=group_id))
     async def handle_new_message(event):                        # 统计用户消息
+        global user_id_old
         if isinstance(event.message, types.Message) and isinstance(event.message.from_id, types.PeerUser):
             user_id = event.message.from_id.user_id
             message = event.message
@@ -30,7 +32,7 @@ def score_commands(client):
             else:
                 msg_type = 'text'
             
-            if user_id not in admin_ids:
+            if user_id not in admin_ids and (user_id != user_id_old):
                 if user_id in user_msg_count:
                     if msg_type in user_msg_count[user_id]:
                         user_msg_count[user_id][msg_type] += 1
@@ -38,6 +40,8 @@ def score_commands(client):
                         user_msg_count[user_id][msg_type] = 1
                 else:
                     user_msg_count[user_id] = {msg_type: 1}
+
+                user_id_old = user_id
                 # print(user_msg_count)
             # await save_user_msg_count(file_path, user_msg_count)
 
@@ -83,7 +87,7 @@ async def handle_checkin(event, client, tgid):
             probabilities = [0.03, 0.05, 0.1, 0.2, 0.62]
             roulette = choices(options, weights=probabilities, k=1)[0]
             if roulette == 'x2':
-                score_value = score_value * 2
+                score_value = abs(score_value) * 2
                 await change_score(tgid, score_value)
                 await update_checkin(tgid)
                 await event.reply(f'积分翻倍,获得 {score_value} 分')
