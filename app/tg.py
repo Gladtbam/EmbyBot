@@ -13,7 +13,6 @@ import re
 admin_ids = load_config()['ADMIN_IDS']
 group_id = load_config()['GROUP_ID']
 # renew_value = load_config()['Renew_Value']
-renew_value = -(int(init_renew_value()))
 bot_name = load_config()['BOT_NAME']
 
 signup_method = {"time": 0, "remain_num": 0.0}      # 注册方法
@@ -165,6 +164,7 @@ async def handle_code(event, tgid, code):
                             await event.respond('续期成功')
                         else:
                             score_result = await search_score(tgid_code)
+                            renew_value = -(int(init_renew_value()))
                             if int(score_result[1]) >= 100:
                                 await update_limit(tgid)
                                 await change_score(tgid_code, renew_value)

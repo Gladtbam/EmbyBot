@@ -230,8 +230,8 @@ def init_renew_value():
     median_value = non_zero_values.median()
     variance_value = non_zero_values.var()
 
-    print("平均数:", mean_value)
-    print("中位数:", median_value)
-    print("方差:", variance_value)
+    # print("平均数:", mean_value)
+    # print("中位数:", median_value)
+    # print("方差:", variance_value)
     session.close()
     return mean_value if mean_value else 0

@@ -7,7 +7,6 @@ from app.db import create_code, search_user, update_limit, change_score, search_
 from app.data import load_config
 
 admin_ids = load_config()['ADMIN_IDS']
-renew_value = -(int(init_renew_value()))
 # renew_value = load_config()['Renew_Value']
 emby_url = load_config()['EMBY_URL']
 
@@ -34,7 +33,7 @@ def register_callback(client, client_user):
         elif data == 'weblink':
             await event.respond(f'Emby 地址:\n`{emby_url}`')
         elif data == 'get_renew':
-            await event.respond(f'今日续期积分: {abs(renew_value)}')
+            await event.respond(f'今日续期积分: {int(init_renew_value())}')
 
 async def handle_create_code(event):
     keyboard = [
@@ -67,13 +66,14 @@ async def handle_renew(event):
     keyboard = [
         [right_button]
     ]
-    message = await event.respond(f'点击确认, 减除 {abs(renew_value)} 积分续期', buttons=keyboard)
+    message = await event.respond(f'点击确认, 减除 {int(init_renew_value())} 积分续期', buttons=keyboard)
     await sleep(10)
     await message.delete()
 
 async def handle_renew_right(event, tgid):
     result = await search_user(tgid)
     current_time = datetime.now()
+    renew_value = -(int(init_renew_value()))
     if result is not None:
         limitdate = result[3]
         remain_day = limitdate - current_time
