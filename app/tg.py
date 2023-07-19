@@ -17,6 +17,7 @@ group_id = load_config()['GROUP_ID']
 bot_name = load_config()['BOT_NAME']
 
 signup_method = {"time": 0, "remain_num": 0.0}      # 注册方法
+signup_message = None
 
 # 注册命令处理逻辑
 def register_commands(client, client_user):
@@ -36,13 +37,13 @@ def register_commands(client, client_user):
             else:
                 await event.reply('仅私聊')
 
-        elif re.match(fr'^/signup({bot_name})?\s+(.*)$', text):
-            await handle_signup_method(event, tgid, args)
+        elif re.match(fr'^/signup(?:{bot_name})?(\s.*)?$', text):
+            await handle_signup_method(client, event, tgid, args)
 
         elif re.match(fr'^/code({bot_name})?\s+(.*)$', text):
             if len(args) > 0:
                 if event.is_private or tgid in admin_ids:
-                    await handle_code(event, tgid, args[0])
+                    await handle_code(client, event, tgid, args[0])
                 else:
                     await event.reply('仅私聊')
             else:
@@ -122,36 +123,42 @@ async def handle_help(event):
     '''
     await event.respond(message, parse_mode='Markdown')
 
-async def handle_signup_method(event, tgid, args):
+async def handle_signup_method(client, event, tgid, args):
+    global signup_message
     current_time = datetime.now().timestamp()
     if tgid in admin_ids:
         if len(args) > 0:
             if re.match(r'^\d+$', args[0]):         # 注册人数
                 signup_method['remain_num'] = args[0]
+                signup_message = await client.send_message(group_id, f"开启注册, 剩余注册人数: {signup_method['remain_num']}")
             elif re.match(r'^(\d+[hms])+$', args[0]):
                 total_seconds = await parse_combined_duration(args[0])
                 signup_method['time'] = current_time + total_seconds
+                dt_object = datetime.fromtimestamp(float(signup_method['time']))
+                signup_message = await client.send_message(group_id, f"开启注册, 时间截至{dt_object}")
+            await client.pin_message(group_id, signup_message, notify=False)
         else:
-            await handle_signup(event, tgid)
+            await handle_signup(client, event, tgid)
     else:
         if signup_method['remain_num'] != 0:
-            await handle_signup(event, tgid)
+            await handle_signup(client, event, tgid)
             signup_method['remain_num'] = int(signup_method['remain_num']) - 1
+            await client.edit_message(group_id, signup_message, f"开启注册, 剩余注册人数: {signup_method['remain_num']}")
         elif float(signup_method['time']) > current_time:
-            await handle_signup(event, tgid)
+            await handle_signup(client, event, tgid)
         else:
             await event.reply('未开放注册！！！\n如果有注册码, 请通过 `/code` 使用注册码注册')
 
-async def handle_code(event, tgid, code):
+async def handle_code(client, event, tgid, code):
     result = await search_code(code)
     if result is not None:
-        verify_result = await verify_code(code, result[1], result[2]) 
+        verify_result = await verify_code(code, result[1], result[2])
         func_bit = int(result[3][0].strip())
         tgid_code = int(result[3][1:].strip())
         if verify_result:
             if func_bit == 1:           # 注册
                 if tgid_code == tgid or tgid_code in admin_ids:
-                    await handle_signup(event, tgid)
+                    await handle_signup(client, event, tgid)
                     await delete_code(code)
                 else:
                     await event.respond('ID校验失败, 不属于你的注册码')
@@ -191,7 +198,7 @@ async def handle_code(event, tgid, code):
     else:
         await event.respond('校验失败, 该“码”已失效, 可能已被使用或篡改\n请检查您的“码”')
 
-async def handle_signup(event, tgid):
+async def handle_signup(client, event, tgid):
     user = await event.client.get_entity(tgid)  # 获取tg用户信息
     tgname = user.username                      # 获取tg用户ID
 
@@ -210,11 +217,11 @@ async def handle_signup(event, tgid):
             await User_Policy(embyid, BlockMedia)
             passwd = await Password(embyid)
 
-            message = f'创建成功！！！\nEMBY ID: {embyid}\n用户名: {tgname}\n初始密码: {passwd}\n请及时修改密码'
+            message = f'创建成功！！！\nEMBY ID: `{embyid}`\n用户名: `{tgname}`\n初始密码: `{passwd}`\n\n请及时修改密码'
     else:
         message = '未设置Telegram用户名, 请设置后重试'
-    
-    await event.respond(message)
+
+    await client.send_message(tgid, message)
 
 async def handle_delete(event):
     reply_tgid = await get_reply(event)
@@ -293,7 +300,7 @@ async def send_scores_to_group(client_user, group_id, user_scores):
         user = await client_user.get_entity(user_id)
         username = user.first_name + ' ' + user.last_name if user.last_name else user.first_name
         message += f"[{username}](tg://user?id={user_id}) 获得: {score_value} 积分\n"
-    
+
     await client_user.send_message(group_id, message, parse_mode='Markdown')
 
 # 计算总时间
@@ -361,3 +368,4 @@ async def handle_forbid_wuming(event, client_user, tgid):
     message_id = event.message.id
     message = f"/warn"
     await client_user(functions.messages.SendMessageRequest(peer=get_peer_id(group_id),message=message,reply_to_msg_id=message_id))
+
