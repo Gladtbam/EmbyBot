@@ -82,7 +82,7 @@ async def handle_renew_right(event, tgid):
         remain_day = limitdate - current_time
         if remain_day.days <= 7:
             score_result = await search_score(tgid)
-            if int(score_result[1]) >= 100:
+            if int(score_result[1]) >= int(init_renew_value()):
                 await update_limit(tgid)
                 await change_score(tgid, renew_value)
                 if result[4] is True:                  # 解封Emby
