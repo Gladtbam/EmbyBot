@@ -29,8 +29,8 @@ def register_callback(client, client_user):
             await handle_renew_right(event, tgid)
         elif data == 'nsfw':
             await handle_nsfw(event, tgid)
-        elif data == 'reset_pw':
-            await handle_resetpw(event, tgid)
+        # elif data == 'reset_pw':
+        #     await handle_resetpw(event, tgid)
         elif data == 'weblink':
             await event.respond(f'Emby 地址:\n`{emby_url}`')
         elif data == 'get_renew':

@@ -245,7 +245,7 @@ async def handle_me(event, tgid):
             Button.inline("续期", b"renew")
         ],
         [
-            Button.inline("忘记密码", b"reset_pw"),
+            # Button.inline("忘记密码", b"reset_pw"),
             Button.inline("线路查询", b"weblink"),
             Button.inline("查询续期积分", b"get_renew")
         ]
