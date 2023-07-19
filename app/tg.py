@@ -14,7 +14,7 @@ import re
 admin_ids = load_config()['ADMIN_IDS']
 group_id = load_config()['GROUP_ID']
 # renew_value = load_config()['Renew_Value']
-bot_name = load_config()['BOT_NAME']
+bot_name = load_config()['Telegram']['BOT_NAME']
 
 signup_method = {"time": 0, "remain_num": 0.0}      # 注册方法
 signup_message = None

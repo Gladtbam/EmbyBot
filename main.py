@@ -7,9 +7,9 @@ from app.tgscore import score_commands, user_msg_count
 
 # file_path = 'user_msg_count.json'
 
-api_id = load_config()['API_ID']
-api_hash = load_config()['API_HASH']
-bot_token = load_config()['BOT_TOKEN']
+api_id = load_config()['Telegram']['API_ID']
+api_hash = load_config()['Telegram']['API_HASH']
+bot_token = load_config()['Telegram']['BOT_TOKEN']
 
 # user_msg_count = load_user_msg_count(file_path)
 

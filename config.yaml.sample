@@ -1,20 +1,37 @@
 # Telegram
-API_ID: ''
-API_HASH: ''
-BOT_TOKEN: ''
-BOT_NAME: '@xxx'
+Telegram:
+  API_ID: ''
+  API_HASH: ''
+  BOT_TOKEN: ''
+  BOT_NAME: '@xxx'
+
 ADMIN_IDS:                  # 管理员列表
   - xxx
   - xxx
 GROUP_ID: -123              # 监控群组ID
 
 # 数据库
-DB_HOST: 'localhost'        # 数据库地址
-DB_USER: ''                 # 用户数据库
-DB_PASSWORD: ''
-DB_NAME: ''
-DB_PORT: 3306
+DataBase:
+  DB_HOST: 'localhost'        # 数据库地址
+  DB_USER: ''                 # 用户数据库
+  DB_PASSWORD: ''
+  DB_NAME: ''
+  DB_PORT: 3306
 
 # Emby
-EMBY_URL: ''
-API_KEY: ''
+Emby:
+  URL: ''
+  API_KEY: ''
+
+# Radarr
+Radarr:
+  URL: ''
+  API_KEY: ''
+
+# Sonarr
+Sonarr:
+  URL: ''
+  API_KEY: ''
+
+OMDB:
+  API_KEY: ''

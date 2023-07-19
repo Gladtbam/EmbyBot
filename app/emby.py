@@ -5,8 +5,8 @@ import string
 import aiohttp
 from app.data import load_config
 
-emby_url = load_config()['EMBY_URL']
-api_key = load_config()['API_KEY']
+emby_url = load_config()['Emby']['URL']
+api_key = load_config()['Emby']['API_KEY']
 headers = {
         'Content-Type': 'application/json'
     }

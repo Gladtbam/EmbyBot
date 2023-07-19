@@ -9,7 +9,7 @@ from app.arr.search import handle_add_search
 
 admin_ids = load_config()['ADMIN_IDS']
 # renew_value = load_config()['Renew_Value']
-emby_url = load_config()['EMBY_URL']
+emby_url = load_config()['Emby']['URL']
 
 def register_callback(client, client_user):
     @client.on(events.CallbackQuery)

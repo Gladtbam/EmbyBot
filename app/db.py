@@ -3,14 +3,15 @@ from sqlalchemy import create_engine, Column, Integer, String, DateTime, Boolean
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from pandas import read_sql
+import matplotlib.pyplot as plt
 from app.data import load_config
 
 
-db_user = load_config()['DB_USER']
-db_password = load_config()['DB_PASSWORD']
-db_host = load_config()['DB_HOST']
-db_port = load_config()['DB_PORT']
-db_name = load_config()['DB_NAME']
+db_user = load_config()['DataBase']['USER']
+db_password = load_config()['DataBase']['PASSWORD']
+db_host = load_config()['DataBase']['HOST']
+db_port = load_config()['DataBase']['PORT']
+db_name = load_config()['DataBase']['NAME']
 admin_ids = load_config()['ADMIN_IDS']
 
 # 创建数据库连接引擎
