@@ -8,6 +8,7 @@ from app.emby import New_User, User_Policy, Password, User_delete
 from app.data import load_config
 from app.regcode import verify_code
 from app.tgscore import user_msg_count, calculate_scores, handle_checkin
+from app.arr.search import handle_search
 import re
 
 admin_ids = load_config()['ADMIN_IDS']
@@ -82,6 +83,12 @@ def register_commands(client, client_user):
 
         elif re.match(fr'^/checkin({bot_name})?$', text):
             await handle_checkin(event, client, tgid)
+
+        elif re.match(fr'^/request({bot_name})?\s+(.*)$', text):
+            if len(args) > 0:
+                await handle_search(event, client, args)
+            else:
+                await event.reply('参数错误, 请参考WiKi')
 
         elif re.match(r'^/.*@WuMingv2Bot\b', text):
             if tgid not in admin_ids:

@@ -5,6 +5,7 @@ from app.regcode import generate_code
 from app.emby import User_Policy, Get_UserInfo, Password
 from app.db import create_code, search_user, update_limit, change_score, search_score, init_renew_value
 from app.data import load_config
+from app.arr.search import handle_add_search
 
 admin_ids = load_config()['ADMIN_IDS']
 # renew_value = load_config()['Renew_Value']
@@ -34,6 +35,8 @@ def register_callback(client, client_user):
             await event.respond(f'Emby 地址:\n`{emby_url}`')
         elif data == 'get_renew':
             await event.respond(f'今日续期积分: {int(init_renew_value())}')
+        elif data in ['movie_zh', 'movie_euus', 'movie_jak', 'movie_other', 'movie_anime', 'tv_zh', 'tv_euus', 'tv_jak', 'tv_other', 'tv_anime']:
+            await handle_add_search(client, event, data)
 
 async def handle_create_code(event):
     keyboard = [
