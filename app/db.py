@@ -137,10 +137,7 @@ async def update_checkin(tgid):
     current_time = datetime.now()
     if result:
         result.checkintime = current_time
-        if result.checkin == 7:
-            result.checkin = 1
-        else:
-            result.checkin += 1
+        result.checkin += 1
     else:
         new_score = Score(tgid=tgid, value=0, checkin=1, checkintime=current_time)
         session.add(new_score)

@@ -262,9 +262,15 @@ async def handle_me(event, tgid):
         message = f'**尚无 Emby 账户**\n'
     if score_result is None:
         await change_score(tgid, 0)
-        message += f'**积分**: 0'
+        message += f'''
+**积分**: 0
+**签到天数**: 0
+'''
     else:
-        message += f"**积分**: `{score_result[1]}`"
+        message += f'''
+**积分**: `{score_result[1]}`
+**签到天数**: `{score_result[2]}`
+'''
 
     if user_result is not None:
         await event.respond(message, parse_mode='Markdown', buttons=keyboard)

@@ -32,7 +32,7 @@ def score_commands(client):
                     msg_type = 'media'
             else:
                 msg_type = 'text'
-            
+
             if user_id not in admin_ids and (user_id != user_id_old):
                 if not event.message.text.startswith('/'):
                     if user_id in user_msg_count:
@@ -85,7 +85,7 @@ async def handle_checkin(event, client, tgid):
     # diff_time = current_time - result[3]
     if result is None or result[3] is None or (current_time - result[3]) >= timedelta(days=1):
         score_value = randint(-2,5)
-        if result is None or result[2] < 7:
+        if result is None or (result[2] % 7 != 0):
             await change_score(tgid, score_value)
             message = f'签到成功, 获得 {score_value} 分'
         else:
