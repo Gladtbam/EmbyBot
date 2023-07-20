@@ -102,3 +102,14 @@ async def Delete_Ban(ban_emby_ids):
     for embyid in ban_emby_ids:
         url = f"{emby_url}/emby/Users/{embyid}?api_key={api_key}"
         requests.delete(url, headers=headers)
+
+# 获取指定用户播放时间
+async def UserPlaylist(emby_id, enddate):
+    url = f"{emby_url}/emby/user_usage_stats/UserPlaylist?user_id={emby_id}&aggregate_data=false&days=30&end_date={enddate}&api_key={api_key}"
+    response = requests.get(url, headers=headers)
+    total_duration = 0      # 单位：秒
+    for item in response.json():
+        total_duration += int(item["duartion"])
+    
+    duration_ratio = total_duration / 86400
+    return total_duration

@@ -4,7 +4,7 @@ from telethon.tl.types import ChatBannedRights
 from telethon.utils import get_display_name, get_peer_id
 from asyncio import sleep
 from app.db import create_user, search_user, delete_user, search_code, delete_code, update_limit, change_score, search_score, update_score, init_renew_value
-from app.emby import New_User, User_Policy, Password, User_delete
+from app.emby import New_User, User_Policy, Password, User_delete, UserPlaylist
 from app.data import load_config
 from app.regcode import verify_code
 from app.tgscore import user_msg_count, calculate_scores, handle_checkin
@@ -251,11 +251,13 @@ async def handle_me(event, tgid):
         ]
     ]
     if user_result is not None:
+        played_ratio = await UserPlaylist(user_result[1], user_result[3].strftime("%Y-%m-%d"))
         message = f'''
 **Telegram ID**: `{user_result[0]}`
 **Emby ID**: `{user_result[1]}`
 **用户名**: `{user_result[2]}`
 **有效期**: `{user_result[3]}`
+**观看度**: `{played_ratio:.2f}%`
 **Ban**: `{user_result[4]}`
 '''
     else:
@@ -283,20 +285,28 @@ async def handle_info(event, tgid):
     user_result = await search_user(reply_tgid)
     score_result = await search_score(reply_tgid)
     if user_result is not None:
+        played_ratio = await UserPlaylist(user_result[1], user_result[3].strftime("%Y-%m-%d"))
         message = f'''
 **Telegram ID**: `{user_result[0]}`
 **Emby ID**: `{user_result[1]}`
 **用户名**: `{user_result[2]}`
 **有效期**: `{user_result[3]}`
+**观看度**: `{played_ratio:.2f}%`
 **Ban**: `{user_result[4]}`
 '''
     else:
         message = f'**尚无 Emby 账户**\n'
     if score_result is None:
         await change_score(tgid, 0)
-        message += f'**积分**: 0'
+        message += f'''
+**积分**: 0
+**签到天数**: 0
+'''
     else:
-        message += f"**积分**: `{score_result[1]}`"
+        message += f'''
+**积分**: `{score_result[1]}`
+**签到天数**: `{score_result[2]}`
+'''
     await event.reply(message, parse_mode='Markdown')
 
 # 发送积分更新消息

@@ -2,7 +2,7 @@ from telethon import events, Button
 from asyncio import sleep
 from datetime import datetime
 from app.regcode import generate_code
-from app.emby import User_Policy, Get_UserInfo, Password
+from app.emby import User_Policy, Get_UserInfo, Password, UserPlaylist
 from app.db import create_code, search_user, update_limit, change_score, search_score, init_renew_value
 from app.data import load_config
 from app.arr.search import handle_add_search
@@ -69,20 +69,24 @@ async def handle_renew(event):
     keyboard = [
         [right_button]
     ]
-    message = await event.respond(f'点击确认, 减除 {int(init_renew_value())} 积分续期', buttons=keyboard)
+    message = await event.respond(f'点击确认, 减除 {int(init_renew_value())} 积分(折扣前)续期', buttons=keyboard)
     await sleep(10)
     await message.delete()
 
 async def handle_renew_right(event, tgid):
     result = await search_user(tgid)
     current_time = datetime.now()
-    renew_value = -(int(init_renew_value()))
     if result is not None:
         limitdate = result[3]
         remain_day = limitdate - current_time
         if remain_day.days <= 7:
             score_result = await search_score(tgid)
-            if int(score_result[1]) >= int(init_renew_value()):
+            played_ratio = await UserPlaylist(result[1], result[3].strftime("%Y-%m-%d"))
+            if played_ratio >= 1:
+                renew_value = 0
+            else:
+                renew_value = -(int(int(init_renew_value()) * ( 1 - (0.5 * played_ratio))))
+            if int(score_result[1]) >= abs(renew_value):
                 await update_limit(tgid)
                 await change_score(tgid, renew_value)
                 if result[4] is True:                  # 解封Emby
@@ -90,7 +94,7 @@ async def handle_renew_right(event, tgid):
                     await User_Policy(result[1], BlockMedia)
                 await event.respond('续期成功')
             else:
-                await event.respond('积分不足')
+                await event.respond(f'积分不足, 当前所需积分 {abs(renew_value)}(折扣后)')
         else:
             await event.respond(f'离到期还有 {remain_day.days} 天\n目前小于 7 天才允许续期')
 
