@@ -6,7 +6,8 @@
 ```text  
 help - [私聊]帮助
 checkin - 签到
-signup - 注册, 仅开放注册时使用。
+signup - 注册, 仅开放注册时使用
+request - 求片, 具体使用查看WiKi
 code - [私聊]使用注册码注册, 或者使用续期码续期。例: /code 123
 del - [管理员]删除 Emby 账户, 需回复一个用户
 me - [私聊]查看 Emby 账户 和 个人 信息(包含其它工具)
