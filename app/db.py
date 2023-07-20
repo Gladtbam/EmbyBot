@@ -186,16 +186,16 @@ async def update_score(use_ratios, total_score):
     user_score = {}
     for user_id, ratio in use_ratios.items():
         score_value = int(ratio * 0.5 * total_score)
-        if score_value != 0:
-            exist_score = session.query(Score).get(user_id)         # 查询是否存在相同的记录
+        if score_value == 0:
+            score_value = 1
+        exist_score = session.query(Score).get(user_id)         # 查询是否存在相同的记录
+        if exist_score:
+            exist_score.value += score_value
+        else:
+            new_score = Score(tgid=user_id, value=score_value, checkin=0, checkintime=datetime(1970, 1, 1, 8, 0, 0))
+            session.add(new_score)
 
-            if exist_score:
-                exist_score.value += score_value
-            else:
-                new_score = Score(tgid=user_id, value=score_value, checkin=0, checkintime=datetime(1970, 1, 1, 8, 0, 0))
-                session.add(new_score)
-
-            user_score[user_id] = score_value
+        user_score[user_id] = score_value
     session.commit()
     session.close()
 
