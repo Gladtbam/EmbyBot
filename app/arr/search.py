@@ -1,4 +1,5 @@
 import requests
+from datetime import datetime, timedelta
 from telethon import events, Button
 from asyncio import sleep
 from app.data import load_config
@@ -7,15 +8,21 @@ from app.arr.sonarr import get_tv_info, add_tv
 
 api_key = load_config()['OMDB']['API_KEY']
 data_info = {}
+last_runtime = None
 
 async def handle_search(event, client, param):
-    global data_info
-    if param[0] == 'tv':
-        status, data_info = await get_tv_info(param[1])
-    elif param[0] == 'movie':
-        status, data_info = await get_movie_info(param[1])
+    global data_info, last_runtime
+    current_time = datetime.now()
+    if last_runtime == None or (current_time - last_runtime >= timedelta(minutes=10)):
+        if param[0] == 'tv':
+            status, data_info = await get_tv_info(param[1])
+        elif param[0] == 'movie':
+            status, data_info = await get_movie_info(param[1])
 
-    await send_info(client, event, param, status)
+        await send_info(client, event, param, status)
+        last_runtime = current_time
+    else:
+        event.reply(f'上次执行时间: {last_runtime}, 请等待 10 分钟后执行')
 
 async def get_country(name):
     imdbId = name['imdbId']
