@@ -112,4 +112,4 @@ async def UserPlaylist(emby_id, enddate):
         total_duration += int(item["duration"])
 
     duration_ratio = total_duration / 86400
-    return total_duration
+    return duration_ratio
