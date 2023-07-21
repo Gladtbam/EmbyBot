@@ -287,12 +287,13 @@ async def handle_info(event, tgid):
     score_result = await search_score(reply_tgid)
     if user_result is not None:
         played_ratio = await UserPlaylist(user_result[1], user_result[3].strftime("%Y-%m-%d"))
+        played_ratio = "{:.3f}%".format(played_ratio * 100)
         message = f'''
 **Telegram ID**: `{user_result[0]}`
 **Emby ID**: `{user_result[1]}`
 **用户名**: `{user_result[2]}`
 **有效期**: `{user_result[3]}`
-**观看度**: `{played_ratio:.2f}%`
+**观看度**: `{played_ratio}`
 **Ban**: `{user_result[4]}`
 '''
     else:
