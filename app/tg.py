@@ -85,7 +85,7 @@ def register_commands(client, client_user):
         elif re.match(fr'^/checkin({bot_name})?$', text):
             await handle_checkin(event, client, tgid)
 
-        elif re.match(fr'^/request({bot_name})?\s+(.*)$', text):
+        elif re.match(fr'^/request(?:{bot_name})?(\s.*)?$', text):
             if len(args) > 0:
                 await handle_search(event, client, args)
             else:
