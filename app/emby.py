@@ -109,7 +109,7 @@ async def UserPlaylist(emby_id, enddate):
     response = requests.get(url, headers=headers)
     total_duration = 0      # 单位：秒
     for item in response.json():
-        total_duration += int(item["duartion"])
-    
+        total_duration += int(item["duration"])
+
     duration_ratio = total_duration / 86400
     return total_duration
