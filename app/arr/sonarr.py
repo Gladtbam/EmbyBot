@@ -10,7 +10,7 @@ headers = {
         'X-Api-Key': api_key
     }
 
-# 电影信息
+# 剧集信息
 async def get_tv_info(ids):
     web_info = await tv_lookup(ids)
     if web_info:
@@ -32,9 +32,9 @@ async def get_tv_info(ids):
         tv_info = tv_info
     return status, tv_info
 
-# 搜索电影
+# 搜索剧集
 async def tv_lookup(ids):
-    if re.match(r'^tt\d{7}$', ids):                                  # imdb id
+    if re.match(r'^tt\d{5,9}$', ids):                                  # imdb id
         term = f"imdb%3A{ids}"
     else: # re.match(r'^\d{5,7}$', ids):                                    # tvdb id
         term = f"tvdb%3A{ids}"
@@ -45,7 +45,7 @@ async def tv_lookup(ids):
         data = []
     return data
 
-# 搜索电影(本地)
+# 搜索剧集(本地)
 async def get_tv(tvdbId):
     url = f"{sonarr_url}/api/v3/series?tvdbId={tvdbId}"
     response = requests.get(url, headers=headers)
@@ -55,7 +55,7 @@ async def get_tv(tvdbId):
         data = []
     return data
 
-# 添加电影
+# 添加剧集
 async def add_tv(tv, rootFolderPath, seriesType='standard'):
     url = f"{sonarr_url}/api/v3/series"
     data = {

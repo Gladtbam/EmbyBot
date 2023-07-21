@@ -34,7 +34,7 @@ async def get_movie_info(ids):
 
 # 搜索电影
 async def movie_lookup(ids):
-    if re.match(r'^tt\d{7}$', ids):                                  # imdb id
+    if re.match(r'^tt\d{5,9}$', ids):                                  # imdb id
         url = f"{radarr_url}/api/v3/movie/lookup/imdb?imdbId={ids}"
     else: # re.match(r'^\d{5,7}$', ids):                                    # tmdb id
         url = f"{radarr_url}/api/v3/movie/lookup/tmdb?tmdbId={ids}"
