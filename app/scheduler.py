@@ -11,7 +11,7 @@ group_id = load_config()['GROUP_ID']
 scheduler = AsyncIOScheduler()
 
 # 封禁过期用户
-@scheduler.scheduled_job('cron', hour=23, minute=30)
+@scheduler.scheduled_job('cron', hour=0, minute=30)
 async def ban_job():
     emby_ids = await ban_user()
     await Ban_User(emby_ids)
