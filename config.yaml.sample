@@ -35,3 +35,9 @@ Sonarr:
 
 OMDB:
   API_KEY: ''
+
+# 哪吒探针
+Probe:
+  URL: ''
+  Token: ''
+  Id: ''

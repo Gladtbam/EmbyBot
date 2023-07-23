@@ -113,3 +113,13 @@ async def UserPlaylist(emby_id, enddate):
 
     duration_ratio = total_duration / 86400
     return duration_ratio
+
+# 获取用户会话数量
+async def session_list():
+    url = f"{emby_url}/emby/user_usage_stats/session_list?api_key={api_key}"
+    response = requests.get(url, headers=headers)
+    now_playing = 0
+    for item in response.json():
+        if "NowPlayingItem" in item:
+            now_playing += 1
+    return now_playing

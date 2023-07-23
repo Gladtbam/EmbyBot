@@ -1,5 +1,6 @@
 import yaml
 import json
+import requests
 # from app.tgscore import user_msg_count
 
 # 加载Config
@@ -18,3 +19,15 @@ def load_user_msg_count(file_path):
             return json.load(file)
     except FileNotFoundError:
         return {}
+
+nezha_url = load_config()['Probe']['URL']    
+nezha_token = load_config()['Probe']['Token']
+nezha_id = load_config()['Probe']['Id']
+
+async def get_server_load():
+    url = f"{nezha_url}/api/v1/server/details?id={nezha_id}"
+    header = {
+        'Authorization': nezha_token 
+    }
+    response = requests.get(url, headers=header)
+    return response.json()
