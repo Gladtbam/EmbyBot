@@ -18,11 +18,14 @@ async def handle_search(event, client, param):
             status, data_info = await get_tv_info(param[1])
         elif param[0] == 'movie':
             status, data_info = await get_movie_info(param[1])
+        else:
+            status = '404'
+            data_info = []
 
         await send_info(client, event, param, status)
         last_runtime = current_time
     else:
-        event.reply(f'上次执行时间: {last_runtime}, 请等待 10 分钟后执行')
+        await event.reply(f'上次执行时间: {last_runtime}, 请等待 10 分钟后执行')
 
 async def get_country(name):
     imdbId = name['imdbId']
