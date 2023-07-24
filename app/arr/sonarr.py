@@ -3,11 +3,18 @@ import requests
 import re
 
 sonarr_url = load_config()['Sonarr']['URL']
+anime_sonarr_url = load_config()['Sonarr']['Anime_URL']
 api_key = load_config()['Sonarr']['API_KEY']
+anime_api_key = load_config()['Sonarr']['Anime_API_KEY']
 headers = {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
         'X-Api-Key': api_key
+    }
+anime_headers = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'X-Api-Key': anime_api_key
     }
 
 # 剧集信息
@@ -57,7 +64,11 @@ async def get_tv(tvdbId):
 
 # 添加剧集
 async def add_tv(tv, rootFolderPath, seriesType='standard'):
-    url = f"{sonarr_url}/api/v3/series"
+    if seriesType == 'anime':
+        url = f"{anime_sonarr_url}/api/v3/series"
+        headers = anime_headers
+    else:
+        url = f"{sonarr_url}/api/v3/series"
     data = {
         "tvdbId": tv['tvdbId'],
         "monitored": True,
