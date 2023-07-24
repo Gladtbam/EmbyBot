@@ -66,9 +66,10 @@ async def get_tv(tvdbId):
 async def add_tv(tv, rootFolderPath, seriesType='standard'):
     if seriesType == 'anime':
         url = f"{anime_sonarr_url}/api/v3/series"
-        headers = anime_headers
+        _headers = anime_headers
     else:
         url = f"{sonarr_url}/api/v3/series"
+        _headers = headers
     data = {
         "tvdbId": tv['tvdbId'],
         "monitored": True,
@@ -85,6 +86,6 @@ async def add_tv(tv, rootFolderPath, seriesType='standard'):
         "seriesType": seriesType,
         "title": tv['title']
     }
-    response = requests.post(url, json=data, headers=headers)
+    response = requests.post(url, json=data, headers=_headers)
     return response.status_code             # 失败为400
 
