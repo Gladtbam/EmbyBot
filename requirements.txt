@@ -1,5 +1,5 @@
 PyYAML~=6.0
-Telethon~=1.29.1
+Telethon~=1.29.2
 cryptg
 base58
 pillow
