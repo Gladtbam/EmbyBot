@@ -69,10 +69,9 @@ async def calculate_scores():
 
     user_ratios = {}
     for user_id, score in scores.items():
-        # b = (a - n*100)/(n+1) + Σ(100/i)
         n = score // 100
         result_score = (score - n * 100) / (n + 1)
-        sigma_sum = sum(100 / i for i in range(1, n + 1))
+        sigma_sum = sum(100 / i for i in range(1, n + 2, 2))
         result_score += sigma_sum
 
         ratio = result_score / total_score
