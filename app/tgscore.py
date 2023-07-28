@@ -4,6 +4,7 @@ from asyncio import sleep
 from app.data import load_config
 from app.db import search_score, search_user, change_score, update_checkin, update_limit, create_code, init_renew_value
 from app.regcode import generate_code
+from app.emby import User_Policy
 from random import random, randint, choices
 
 group_id = load_config()['GROUP_ID']
@@ -102,6 +103,9 @@ async def handle_checkin(event, client, tgid):
             elif roulette == 'renew_1':
                 if user_result is not None:
                     await update_limit(tgid, days=1)
+                    if user_result[4] is True:                  # 解封Emby
+                        BlockMedia = ("Japan")
+                        await User_Policy(user_result[1], BlockMedia)
                     message = '增加续期时间 1 天'
                 else:
                     renew_value_1 = int(renew_value / 30)
@@ -110,6 +114,9 @@ async def handle_checkin(event, client, tgid):
             elif roulette == 'renew_7':
                 if user_result is not None:
                     await update_limit(tgid, days=7)
+                    if user_result[4] is True:                  # 解封Emby
+                        BlockMedia = ("Japan")
+                        await User_Policy(user_result[1], BlockMedia)
                     message = '增加续期时间 7 天'
                 else:
                     renew_value_7 = int(renew_value / 30 * 7)
