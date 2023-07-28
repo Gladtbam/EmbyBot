@@ -107,7 +107,6 @@ async def handle_nsfw(event, tgid):
     result = await search_user(tgid)
     if result is not None:
         user_info = await Get_UserInfo(result[1])
-        print(user_info["Policy"]["BlockedMediaFolders"])
         if len(user_info["Policy"]["BlockedMediaFolders"]) > 0:
             BlockMedia = ()
             await User_Policy(result[1], BlockMedia)
