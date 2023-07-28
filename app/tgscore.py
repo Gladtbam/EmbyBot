@@ -132,6 +132,5 @@ async def handle_checkin(event, client, tgid):
     # 删除消息
     reply_message = await event.reply(message)
     message_ids = [reply_message.id, reply_message.reply_to_msg_id]
-    print(message_ids)
     await sleep(10)
     await client.delete_messages(event.chat_id, message_ids)
