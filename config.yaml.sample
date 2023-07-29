@@ -4,6 +4,7 @@ Telegram:
   API_HASH: ''
   BOT_TOKEN: ''
   BOT_NAME: '@xxx'
+  requese_channel: '@xxx'
 
 ADMIN_IDS:                  # 管理员列表
   - xxx

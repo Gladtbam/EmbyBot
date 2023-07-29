@@ -1,6 +1,7 @@
 import requests
 from datetime import datetime, timedelta
 from telethon import events, Button
+from telethon.tl.types import PeerChannel
 from asyncio import sleep
 from app.data import load_config
 from app.arr.radarr import get_movie_info, add_movie
@@ -23,7 +24,6 @@ async def handle_search(event, client, param):
             data_info = []
 
         await send_info(client, event, param, status)
-        last_runtime = current_time
     else:
         await event.reply(f'上次执行时间: {last_runtime}, 请等待 10 分钟后执行')
 
@@ -122,7 +122,7 @@ async def send_info(client, event, param, status):
         await client.send_message(event.chat_id, message, parse_mode='html', buttons=buttons, file=poster_url)
 
 async def handle_add_search(client, event, category):
-    global data_info
+    global data_info, last_runtime
     if category in ['movie_zh', 'movie_euus', 'movie_jak', 'movie_other', 'movie_anime']:
         if category == 'movie_zh':
             rootFolderPath = '/mnt/remote/Movie/China'
@@ -153,4 +153,28 @@ async def handle_add_search(client, event, category):
             status_code = await add_tv(data_info, rootFolderPath)
     if status_code in [200, 201]:
         await event.reply('添加成功')
+        last_runtime = datetime.now()
+        
+        title = data_info['title']
+        year = data_info['year']
+        images = data_info['images']
+        imdbId = data_info['imdbId']
+        imdb_url = f'https://www.imdb.com/title/{imdbId}'
+        poster_url = None
+        for image in images:
+            if image['coverType'] == 'poster':
+                if 'remoteUrl' in image:
+                    poster_url = image['remoteUrl']
+                else:
+                    poster_url = image['url']
+                break
+        requester_id = event.sender_id
+        user = await client.get_entity(requester_id)
+        username = user.first_name + ' ' + user.last_name if user.last_name else user.first_name
 
+        message = f"<b>{title}</b> ({year})\n"
+        message += f'<a href="{imdb_url}">IMDB</a>\n'
+        message += f'<a href="tg://user?id={requester_id}">求片人: {username}</a>\n'
+
+        channel = await client.get_input_entity(load_config()['Telegram']['requese_channel'])
+        await client.send_message(channel, message, parse_mode='html', file=poster_url)
