@@ -196,7 +196,7 @@ async def handle_code(client, event, tgid, code):
         else:
             await event.respond('校验失败, 该“码”已失效, 可能已被使用或篡改\n请检查您的“码”')
     else:
-        await event.respond('校验失败, 该“码”已失效, 可能已被使用或篡改\n请检查您的“码”')
+        await event.respond('该“码”不存在, 请输入正确的“码”')
 
 async def handle_signup(client, event, tgid):
     user = await event.client.get_entity(tgid)  # 获取tg用户信息
