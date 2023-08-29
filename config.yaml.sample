@@ -10,7 +10,7 @@ ADMIN_IDS:                  # 管理员列表
   - xxx
   - xxx
 GROUP_ID: -123              # 监控群组ID
-SINGUP: 1                   # 注册积分，按续期积分比例计算
+SIGNUP: 1                   # 注册积分，按续期积分比例计算
 
 # 数据库
 DataBase:
