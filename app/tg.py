@@ -126,6 +126,8 @@ async def handle_help(event):
 async def handle_signup_method(client, event, tgid, args):
     global signup_message
     current_time = datetime.now().timestamp()
+    tg_score = await search_score(tgid)
+    singup_value = int(init_renew_value()) * load_config()['SINGUP']
     if tgid in admin_ids:
         if len(args) > 0:
             if re.match(r'^\d+$', args[0]):         # 注册人数
@@ -146,8 +148,11 @@ async def handle_signup_method(client, event, tgid, args):
             await client.edit_message(group_id, signup_message, f"开启注册, 剩余注册人数: {signup_method['remain_num']}")
         elif float(signup_method['time']) > current_time:
             await handle_signup(client, event, tgid)
+        elif tg_score is None or tg_score[1] >= singup_value:
+            await handle_signup(client, event, tgid)
+            await change_score(tgid, -(singup_value))
         else:
-            await event.reply('未开放注册！！！\n如果有注册码, 请通过 `/code` 使用注册码注册')
+            await event.reply('积分不足或未开放注册！！！\n如果有注册码, 请通过 `/code` 使用注册码注册')
 
 async def handle_code(client, event, tgid, code):
     result = await search_code(code)
