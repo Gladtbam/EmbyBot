@@ -74,7 +74,7 @@ async def Get_UserInfo(embyid):
     return user_info
 
 async def Password(embyid):
-    Pw = ''.join(random.choice(string.ascii_letters + string.digits + string.punctuation) for _ in range(12))
+    Pw = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(12))
     data = {
         "Id": embyid,
         "CurrentPw": "",
