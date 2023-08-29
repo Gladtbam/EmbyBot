@@ -391,5 +391,5 @@ async def unmute_group(client, group_id):
 async def handle_forbid_wuming(event, client_user, tgid):
     message_id = event.message.id
     message = f"/warn"
-    await client_user(functions.messages.SendMessageRequest(peer=get_peer_id(group_id),message=message,reply_to_msg_id=message_id))
+    await client_user(functions.messages.SendMessageRequest(group_id,message=message,reply_to_msg_id=message_id))
 
