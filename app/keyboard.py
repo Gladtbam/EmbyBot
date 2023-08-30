@@ -48,6 +48,9 @@ async def handle_create_code(event):
     await message.delete()
 
 async def handle_code(event, tgid, func_bit):
+    result = await search_score(tgid)
+    value = int(init_renew_value())
+
     if func_bit == 0:
         await event.answer('正在生成续期码！')
     elif func_bit == 1:
@@ -59,13 +62,17 @@ async def handle_code(event, tgid, func_bit):
         code_time = datetime.now().date() + timedelta(days=90)
     else:
         code_time = datetime.now().date() + timedelta(days=30)
-        await change_score(tgid, -int(init_renew_value()))
-    
-    await create_code(code, public_key, sha256_hash, func_bit, code_time)
-    if func_bit == 0:
-        await event.respond(f"你生成的续期码为:(点击复制) \n`{code}`\n有效期至 {code_time}")
-    elif func_bit == 1:
-        await event.respond(f"你生成的注册码为:(点击复制) \n`{code}`\n有效期至 {code_time}")
+        if result is not None and result[1] > value:
+            await change_score(tgid, -(value))
+        else:
+            await event.respond("积分不足, 无法生成")
+            
+    if tgid in admin_ids or (result is not None and result[1] > value):
+        await create_code(code, public_key, sha256_hash, func_bit, code_time)
+        if func_bit == 0:
+            await event.respond(f"你生成的续期码为:(点击复制) \n`{code}`\n有效期至 {code_time}")
+        elif func_bit == 1:
+            await event.respond(f"你生成的注册码为:(点击复制) \n`{code}`\n有效期至 {code_time}")
 
 async def handle_renew(event):
     right_button = Button.inline("确定", b"renew_right")
