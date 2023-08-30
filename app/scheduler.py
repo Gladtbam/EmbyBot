@@ -1,6 +1,6 @@
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-from app.db import ban_user, delete_ban, update_score
+from app.db import ban_user, delete_ban, update_score, del_limit_code
 from app.emby import Ban_User, Delete_Ban, session_list
 from app.tgscore import calculate_scores, user_msg_count
 from app.tg import send_scores_to_group
@@ -21,6 +21,11 @@ async def ban_job():
 async def delete_job():
     ban_emby_ids = await delete_ban()
     await Delete_Ban(ban_emby_ids)
+
+# 删除过期 "码"
+@scheduler.scheduled_job('cron', hour=0, minute=2)
+async def code_job():
+    await del_limit_code()
 
 # @scheduler.scheduled_job('cron', hour=8, minute=0)
 async def score_job(client_user):
@@ -61,5 +66,5 @@ CPU 负载: {cpu_info}
 def start_scheduler(client, client_user):
     scheduler.add_job(score_job, 'cron', hour=8, minute=0, args=[client_user])
     scheduler.add_job(score_job, 'cron', hour=20, minute=0, args=[client_user])
-    scheduler.add_job(server_load_job, 'cron', minute=0, args=[client_user])
+    scheduler.add_job(server_load_job, 'cron', minute=0, second=1, args=[client_user])
     scheduler.start()

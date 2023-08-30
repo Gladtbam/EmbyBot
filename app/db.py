@@ -39,6 +39,7 @@ class Code(Base):
     verify_key = Column(String(256))
     sha256_hash = Column(String(256))
     data = Column(String(50))
+    deltime = Column(DateTime)
 
 class Score(Base):
     __tablename__ = 'score'
@@ -73,9 +74,9 @@ async def create_user(tgid, embyid, embyname):
     session.close()
 
 # 创建 码
-async def create_code(code, public_key, sha256_hash, data):
+async def create_code(code, public_key, sha256_hash, data, deltime):
     session = create_session()
-    code = Code(codes=code, verify_key=public_key, sha256_hash=sha256_hash, data=data) # type: ignore
+    code = Code(codes=code, verify_key=public_key, sha256_hash=sha256_hash, data=data, deltime=deltime) # type: ignore
     session.add(code)
     session.commit()
     session.close()
@@ -96,7 +97,7 @@ async def search_code(code):
     session = create_session()
     code_ = session.query(Code).filter(Code.codes == code).first() # type: ignore
     session.close()
-    return [code_.codes, code_.verify_key, code_.sha256_hash, code_.data] if code_ else None
+    return [code_.codes, code_.verify_key, code_.sha256_hash, code_.data, code_.deltime.date()] if code_ else None
 
 # 搜索 积分
 async def search_score(tgid):
@@ -119,6 +120,18 @@ async def delete_code(code):
     session = create_session()
     del_code = delete(Code).where(Code.codes == code)
     session.execute(del_code)
+    session.commit()
+    session.close()
+
+# 删除过期码
+async def del_limit_code():
+    session = create_session()
+    current_time = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    delete_codes = session.query(Code).filter(Code.deltime <= current_time).all()
+
+    for del_codes in delete_codes:
+        session.delete(del_codes)
+    
     session.commit()
     session.close()
 
@@ -170,7 +183,7 @@ async def ban_user():
 # 删除已封禁用户
 async def delete_ban():
     session = create_session()
-    current_time = datetime.now().date()
+    current_time = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
 
     user_ban_delete = session.query(User).filter(User.deletedate <= current_time, User.ban == True).all() # type: ignore
     ban_emby_ids = []

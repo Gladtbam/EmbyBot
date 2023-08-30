@@ -15,7 +15,7 @@ async def generate_code(tgid, func_bit):                            #func_bit: 1
     public_key = base58.b58encode(pub_key)  # 公钥，用于校验 码
     hash_sha256 = base58.b58encode(sha256_data)
 
-    return code.decode('utf-8'), public_key.decode('utf-8'), hash_sha256.decode('utf-8'), data
+    return code.decode('utf-8'), public_key.decode('utf-8'), hash_sha256.decode('utf-8')
 
 # 解码注册码、续期码
 async def verify_code(code, public_key, sha256_hash):

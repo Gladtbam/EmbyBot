@@ -158,15 +158,11 @@ async def handle_code(client, event, tgid, code):
     result = await search_code(code)
     if result is not None:
         verify_result = await verify_code(code, result[1], result[2])
-        func_bit = int(result[3][0].strip())
-        tgid_code = int(result[3][1:].strip())
+        func_bit = int(result[3])
         if verify_result:
             if func_bit == 1:           # 注册
-                if tgid_code == tgid or tgid_code in admin_ids:
-                    await handle_signup(client, event, tgid)
-                    await delete_code(code)
-                else:
-                    await event.respond('ID校验失败, 不属于你的注册码')
+                await handle_signup(client, event, tgid)
+                await delete_code(code)
             elif func_bit == 0:         # 续期
                 result_user = await search_user(tgid)
                 current_time = datetime.now().date()
@@ -174,26 +170,12 @@ async def handle_code(client, event, tgid, code):
                     limitdate = result_user[3]
                     remain_day = limitdate - current_time
                     if remain_day.days <= 7:                            # 当剩余时间小于7天
-                        if tgid_code in admin_ids:
-                            await update_limit(tgid)
-                            await delete_code(code)
-                            if result_user[4] is True:                  # 解封Emby
-                                BlockMedia = ("Japan")
-                                await User_Policy(result_user[1], BlockMedia)
-                            await event.respond('续期成功')
-                        else:
-                            score_result = await search_score(tgid_code)
-                            renew_value = -(int(init_renew_value()))
-                            if int(score_result[1]) >= 100:
-                                await update_limit(tgid)
-                                await change_score(tgid_code, renew_value)
-                                await delete_code(code)
-                                if result_user[4] is True:
-                                    BlockMedia = ("Japan")
-                                    await User_Policy(result_user[1], BlockMedia)
-                                await event.respond('续期成功')
-                            else:
-                                await event.respond('积分不足')
+                        await update_limit(tgid)
+                        await delete_code(code)
+                        if result_user[4] is True:                  # 解封Emby
+                            BlockMedia = ("Japan")
+                            await User_Policy(result_user[1], BlockMedia)
+                        await event.respond('续期成功')
                     else:
                         await event.respond(f'离到期还有 {remain_day.days} 天\n目前小于 7 天才允许续期')
                 else:

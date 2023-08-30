@@ -81,6 +81,7 @@ async def calculate_scores():
 
 async def handle_checkin(event, client, tgid):
     current_time = datetime.now().date()
+    code_time = current_time + timedelta(days=90)
     result = await search_score(tgid)
     # diff_time = current_time - result[3]
     if result is None or result[3] is None or (current_time - result[3]) >= timedelta(days=1):
@@ -122,13 +123,13 @@ async def handle_checkin(event, client, tgid):
                     await change_score(tgid, renew_value_7)
                     message = f'尚无账户, 已等比转为积分, 获得 {renew_value_7}'
             elif roulette == 'renew_code':
-                code, public_key, sha256_hash, data = await generate_code(admin_ids[0], 0)
-                await create_code(code, public_key, sha256_hash, data)
+                code, public_key, sha256_hash = await generate_code(admin_ids[0], 0)
+                await create_code(code, public_key, sha256_hash, 0, code_time)
                 message = '获得续期码(1月), 已私聊发送'
                 await client.send_message(tgid, f'续期码(1月):\n{code}')
             elif roulette == 'signup_code':
-                code, public_key, sha256_hash, data = await generate_code(admin_ids[0], 1)
-                await create_code(code, public_key, sha256_hash, data)
+                code, public_key, sha256_hash = await generate_code(admin_ids[0], 1)
+                await create_code(code, public_key, sha256_hash, 1, code_time)
                 message = '获得注册码, 已私聊发送'
                 await client.send_message(tgid, f'注册码:\n{code}')
         await update_checkin(tgid)
