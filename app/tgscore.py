@@ -80,7 +80,7 @@ async def calculate_scores():
     return user_ratios, total_score
 
 async def handle_checkin(event, client, tgid):
-    current_time = datetime.now()
+    current_time = datetime.now().date()
     result = await search_score(tgid)
     # diff_time = current_time - result[3]
     if result is None or result[3] is None or (current_time - result[3]) >= timedelta(days=1):

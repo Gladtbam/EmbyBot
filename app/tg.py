@@ -169,7 +169,7 @@ async def handle_code(client, event, tgid, code):
                     await event.respond('ID校验失败, 不属于你的注册码')
             elif func_bit == 0:         # 续期
                 result_user = await search_user(tgid)
-                current_time = datetime.now()
+                current_time = datetime.now().date()
                 if result_user is not None:                                  # 没必要if，报个jr错
                     limitdate = result_user[3]
                     remain_day = limitdate - current_time
@@ -199,7 +199,7 @@ async def handle_code(client, event, tgid, code):
                 else:
                     await event.respond('用户不存在, 请注册')
         else:
-            await event.respond('校验失败, 该“码”已失效, 可能已被使用或篡改\n请检查您的“码”')
+            await event.respond('校验失败, 该“码”已失效, \n请检查您的“码”')
     else:
         await event.respond('该“码”不存在, 请输入正确的“码”')
 

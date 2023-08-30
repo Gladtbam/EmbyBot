@@ -75,7 +75,7 @@ async def handle_renew(event):
 
 async def handle_renew_right(event, tgid):
     result = await search_user(tgid)
-    current_time = datetime.now()
+    current_time = datetime.now().date()
     if result is not None:
         limitdate = result[3]
         remain_day = limitdate - current_time

@@ -59,7 +59,7 @@ def create_session():
 async def create_user(tgid, embyid, embyname):
     session = create_session()
 
-    current_time = datetime.now()
+    current_time = datetime.now().date()
     if tgid in admin_ids:
         one_month_later = current_time + timedelta(weeks=4752)          # 拉长时间, 表示管理员不过期
     else:
@@ -85,6 +85,10 @@ async def search_user(tgid):
     session = create_session()
     user = session.query(User).filter(User.tgid == tgid).first() # type: ignore
     session.close()
+    if user.limitdate is not None:
+        user.limitdate = user.limitdate.date()
+    if user.deletedate is not None:
+        user.deletedate = user.deletedate.date()
     return [user.tgid, user.embyid, user.embyname, user.limitdate, user.ban, user.deletedate] if user else None     #以列表的形式返回所有
 
 # 搜索 码
@@ -99,7 +103,7 @@ async def search_score(tgid):
     session = create_session()
     score_ = session.query(Score).filter(Score.tgid == tgid).first() # type: ignore
     session.close()
-    return [score_.tgid, score_.value, score_.checkin, score_.checkintime] if score_ else None
+    return [score_.tgid, score_.value, score_.checkin, score_.checkintime.date()] if score_ else None
 
 # 删除用户(手动)
 async def delete_user(tgid):
@@ -125,7 +129,7 @@ async def change_score(tgid, score_value):
     if exist_score:
         exist_score.value += score_value
     else:
-        new_score = Score(tgid=tgid, value=score_value, checkin=0, checkintime=datetime(1970, 1, 1, 8, 0, 0)) # type: ignore
+        new_score = Score(tgid=tgid, value=score_value, checkin=0, checkintime=datetime(1970, 1, 1)) # type: ignore
         session.add(new_score)
     session.commit()
     session.close()
@@ -134,7 +138,7 @@ async def change_score(tgid, score_value):
 async def update_checkin(tgid):
     session = create_session()
     result = session.query(Score).get(tgid)
-    current_time = datetime.now()
+    current_time = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
     if result:
         result.checkintime = current_time
         result.checkin += 1
@@ -147,7 +151,7 @@ async def update_checkin(tgid):
 # 封禁用户
 async def ban_user():
     session = create_session()
-    current_time = datetime.now()
+    current_time = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
     one_week_later = current_time + timedelta(days=7)
 
     user_ban = session.query(User).filter(User.limitdate <= current_time, User.ban == False).all() # type: ignore
@@ -166,7 +170,7 @@ async def ban_user():
 # 删除已封禁用户
 async def delete_ban():
     session = create_session()
-    current_time = datetime.now()
+    current_time = datetime.now().date()
 
     user_ban_delete = session.query(User).filter(User.deletedate <= current_time, User.ban == True).all() # type: ignore
     ban_emby_ids = []
@@ -192,7 +196,7 @@ async def update_score(use_ratios, total_score):
         if exist_score:
             exist_score.value += score_value
         else:
-            new_score = Score(tgid=user_id, value=score_value, checkin=0, checkintime=datetime(1970, 1, 1, 8, 0, 0)) # type: ignore
+            new_score = Score(tgid=user_id, value=score_value, checkin=0, checkintime=datetime(1970, 1, 1)) # type: ignore
             session.add(new_score)
 
         user_score[user_id] = score_value
@@ -204,7 +208,7 @@ async def update_score(use_ratios, total_score):
 # 更新续期时间和解封
 async def update_limit(tgid, days=30):
     session = create_session()
-    current_time = datetime.now()
+    current_time = datetime.now().date()
     update_time = current_time + timedelta(days=days)
 
     user = session.query(User).get(tgid)
