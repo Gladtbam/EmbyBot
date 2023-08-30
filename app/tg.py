@@ -148,7 +148,7 @@ async def handle_signup_method(client, event, tgid, args):
             await client.edit_message(group_id, signup_message, f"开启注册, 剩余注册人数: {signup_method['remain_num']}")
         elif float(signup_method['time']) > current_time:
             await handle_signup(client, event, tgid)
-        elif tg_score is None or tg_score[1] >= signup_value:
+        elif tg_score[1] >= signup_value:
             await handle_signup(client, event, tgid)
             await change_score(tgid, -(signup_value))
         else:
