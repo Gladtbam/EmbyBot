@@ -86,10 +86,11 @@ async def search_user(tgid):
     session = create_session()
     user = session.query(User).filter(User.tgid == tgid).first() # type: ignore
     session.close()
-    if user.limitdate is not None:
-        user.limitdate = user.limitdate.date()
-    if user.deletedate is not None:
-        user.deletedate = user.deletedate.date()
+    if user is not None:
+        if user.limitdate is not None:
+            user.limitdate = user.limitdate.date()
+        if user.deletedate is not None:
+            user.deletedate = user.deletedate.date()
     return [user.tgid, user.embyid, user.embyname, user.limitdate, user.ban, user.deletedate] if user else None     #以列表的形式返回所有
 
 # 搜索 码
@@ -131,7 +132,7 @@ async def del_limit_code():
 
     for del_codes in delete_codes:
         session.delete(del_codes)
-    
+
     session.commit()
     session.close()
 
