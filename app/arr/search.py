@@ -11,7 +11,9 @@ api_key = load_config()['OMDB']['API_KEY']
 data_info = {}
 last_runtime = None
 
-async def handle_search(event, client, param):
+async def handle_search(client, event):
+    text = event.message.text
+    _, *param = text.split(' ')
     global data_info, last_runtime
     current_time = datetime.now()
     if last_runtime == None or (current_time - last_runtime >= timedelta(minutes=10)):
@@ -121,7 +123,8 @@ async def send_info(client, event, param, status):
                 buttons.extend(buttons_movie)
         await client.send_message(event.chat_id, message, parse_mode='html', buttons=buttons, file=poster_url)
 
-async def handle_add_search(client, event, category):
+async def handle_add_search(client, event):
+    category = event.data.decode()
     global data_info, last_runtime
     if category in ['movie_zh', 'movie_euus', 'movie_jak', 'movie_other', 'movie_anime']:
         if category == 'movie_zh':

@@ -1,52 +1,49 @@
-from telethon import events, types
+from telethon import types
 from datetime import datetime, timedelta
 from asyncio import sleep
 from app.data import load_config
-from app.db import search_score, search_user, change_score, update_checkin, update_limit, create_code, init_renew_value
+from app.telegram import send_scores_to_group, get_reply
+from app.db import search_score, search_user, change_score, update_checkin, update_limit, create_code, init_renew_value, update_score
 from app.regcode import generate_code
-from app.emby import User_Policy
-from random import random, randint, choices
+from app.emby_api import User_Policy
+from random import randint, choices
 
 group_id = load_config()['GROUP_ID']
 admin_ids = load_config()['ADMIN_IDS']
-# file_path = 'user_msg_count.json'
 
 user_msg_count = {}
 user_id_old = None
 
-def score_commands(client):
-    @client.on(events.NewMessage(chats=group_id))
-    async def handle_new_message(event):                        # 统计用户消息
-        global user_id_old
-        if isinstance(event.message, types.Message) and isinstance(event.message.from_id, types.PeerUser):
-            user_id = event.message.from_id.user_id
-            message = event.message
+async def handle_new_message(event):                        # 统计用户消息
+    global user_id_old
+    if isinstance(event.message, types.Message) and isinstance(event.message.from_id, types.PeerUser):
+        user_id = event.message.from_id.user_id
+        message = event.message
 
-            if message.media is not None:
-                if message.photo is not None:
-                    msg_type = 'photo'
-                elif message.video is not None:
-                    msg_type = 'video'
-                elif message.document is not None:
-                    msg_type = 'document'
-                else:
-                    msg_type = 'media'
+        if message.media is not None:
+            if message.photo is not None:
+                msg_type = 'photo'
+            elif message.video is not None:
+                msg_type = 'video'
+            elif message.document is not None:
+                msg_type = 'document'
             else:
-                msg_type = 'text'
+                msg_type = 'media'
+        else:
+            msg_type = 'text'
 
-            if user_id not in admin_ids and (user_id != user_id_old):
-                if not event.message.text.startswith('/'):
-                    if user_id in user_msg_count:
-                        if msg_type in user_msg_count[user_id]:
-                            user_msg_count[user_id][msg_type] += 1
-                        else:
-                            user_msg_count[user_id][msg_type] = 1
+        if user_id not in admin_ids and (user_id != user_id_old):
+            if not event.message.text.startswith('/'):
+                if user_id in user_msg_count:
+                    if msg_type in user_msg_count[user_id]:
+                        user_msg_count[user_id][msg_type] += 1
                     else:
-                        user_msg_count[user_id] = {msg_type: 1}
+                        user_msg_count[user_id][msg_type] = 1
+                else:
+                    user_msg_count[user_id] = {msg_type: 1}
 
-                    user_id_old = user_id
-                # print(user_msg_count)
-            # await save_user_msg_count(file_path, user_msg_count)
+                user_id_old = user_id
+            print(user_msg_count)
 
 # 计算比例
 async def calculate_scores():
@@ -79,7 +76,34 @@ async def calculate_scores():
 
     return user_ratios, total_score
 
-async def handle_checkin(event, client, tgid):
+# 结算积分
+async def handle_settle(client_user, event):
+    tgid = event.sender_id
+    if tgid in admin_ids:
+        user_ratios, total_score = await calculate_scores()
+        user_score = await update_score(user_ratios, total_score)
+        await send_scores_to_group(client_user, group_id, user_score)
+        user_msg_count.clear()                  # 清空字典
+    else:
+        message = await event.reply('您非管理员, 无权执行此命令')
+        await sleep(30)
+        await message.delete()
+
+# 修改积分
+async def handle_change_score(event):
+    tgid = event.sender_id
+    text = event.message.text
+    _, *score = text.split(' ')
+    reply_tgid = await get_reply(event)
+    if reply_tgid is not None and tgid in admin_ids:
+        await change_score(reply_tgid, int(score[0]))
+        result_score = await search_score(reply_tgid)
+        await event.reply(f'已更改, 当前用户积分为 {result_score[1]}')
+    else:
+        await event.reply(f'你非管理员 或 请回复一条消息')
+
+async def handle_checkin(client, event):
+    tgid = event.sender_id
     current_time = datetime.now().date()
     code_time = current_time + timedelta(days=90)
     result = await search_score(tgid)

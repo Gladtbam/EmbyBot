@@ -3,7 +3,6 @@ from sqlalchemy import create_engine, Column, Integer, String, DateTime, Boolean
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from pandas import read_sql
-import matplotlib.pyplot as plt
 from app.data import load_config
 
 
@@ -254,3 +253,6 @@ def init_renew_value():
     if mean_value <= 100:
         mean_value = 100
     return mean_value if mean_value else 0
+
+async def handle_get_renew(event):
+    await event.respond(f'今日续期积分: {int(init_renew_value())}')
