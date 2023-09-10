@@ -6,7 +6,7 @@ from app.score_man import calculate_scores, user_msg_count
 from app.score_man import send_scores_to_group
 from app.data import load_config, get_server_load
 
-group_id = load_config()['GROUP_ID']
+chat_id = load_config()['GROUP_ID']
 scheduler = AsyncIOScheduler()
 
 # 封禁过期用户
@@ -30,7 +30,7 @@ async def code_job():
 async def score_job(client_user):
     user_ratios, total_score = await calculate_scores()
     user_score = await update_score(user_ratios, total_score)
-    await send_scores_to_group(client_user, group_id, user_score)
+    await send_scores_to_group(client_user, chat_id, user_score)
     user_msg_count.clear()                  # 清空字典
 
 # @scheduler.scheduled_job('cron', hour=8, minute=0)
@@ -58,12 +58,14 @@ CPU 负载: {cpu_info}
 总下载量: {net_in_transfer}
 总上传量: {net_out_transfer}
 '''
-    await client_user.send_message(group_id, message, parse_mode='Markdown')
+    await client_user.send_message(chat_id, message, parse_mode='Markdown')
 
 # 启动任务
-def start_scheduler(client_user):
-    scheduler.add_job(score_job, 'cron', hour=8, minute=0, args=[client_user])
-    scheduler.add_job(score_job, 'cron', hour=20, minute=0, args=[client_user])
-    scheduler.add_job(server_load_job, 'cron', minute=0, second=1, args=[client_user])
+async def start_scheduler(client_user):
     if not scheduler.running:
+        print('Press Ctrl+C to exit')
+        scheduler.add_job(score_job, 'cron', hour=8, minute=0, args=[client_user])
+        scheduler.add_job(score_job, 'cron', hour=20, minute=0, args=[client_user])
+        scheduler.add_job(score_job, 'cron', minute=25, args=[client_user])
+        scheduler.add_job(server_load_job, 'cron', second=30, args=[client_user])
         scheduler.start()

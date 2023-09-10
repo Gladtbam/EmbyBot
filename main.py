@@ -16,7 +16,7 @@ bot_name = load_config()['Telegram']['BOT_NAME']
 chat_id = load_config()['GROUP_ID']
 
 client = TelegramClient('bot', api_id, api_hash).start(bot_token=bot_token)
-client_user = TelegramClient('user', api_id, api_hash)
+# client_user = TelegramClient('user', api_id, api_hash)
 
 # 注册事件处理函数并传递client对象
 client.add_event_handler(lambda event: handle_start(event), events.NewMessage(pattern=fr'^/start({bot_name})?$'))
@@ -43,16 +43,17 @@ client.add_event_handler(lambda event: handle_get_renew(event), events.CallbackQ
 client.add_event_handler(lambda event: handle_create_code_right(event), events.CallbackQuery(pattern=r'.*_code$'))
 client.add_event_handler(lambda event: handle_add_search(client, event), events.CallbackQuery(pattern=r'^(movie_|tv_).*'))
 
-client_user.add_event_handler(lambda event: start_scheduler(client_user))
-client_user.add_event_handler(lambda event: handle_settle(client_user, event), events.NewMessage(pattern=fr'^/settle({bot_name})?$'))
+# client.add_event_handler(lambda event: start_scheduler(client))
+client.add_event_handler(lambda event: handle_settle(client, event), events.NewMessage(pattern=fr'^/settle({bot_name})?$'))
 
 
 async def run_telegram(client):
     await client.start()
+    await start_scheduler(client)
     await client.run_until_disconnected()
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
-    tasks = [run_telegram(client), run_telegram(client_user)]
+    tasks = [run_telegram(client)]
     loop.run_until_complete(asyncio.gather(*tasks))
     
