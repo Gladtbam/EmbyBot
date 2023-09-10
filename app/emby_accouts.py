@@ -1,12 +1,10 @@
-from datetime import datetime, timedelta
-from telethon import Button
+from datetime import datetime
 from asyncio import sleep
-from app.db import create_code
 from app.db import create_user, search_user, delete_user, search_code, delete_code, update_limit, change_score, search_score, init_renew_value
 from app.emby_api import New_User, User_Policy, Password, User_delete, UserPlaylist, Get_UserInfo
 from app.telegram import get_reply
 from app.data import load_config, parse_combined_duration
-from app.regcode import verify_code, generate_code
+from app.regcode import verify_code
 import re
 
 admin_ids = load_config()['ADMIN_IDS']
@@ -149,52 +147,6 @@ async def handle_delete(event):
 
     await sleep(30)
     await message.delete()
-
-async def handle_create_code(event):
-    keyboard = [
-        Button.inline("注册码", b"activation_code"),
-        Button.inline("续期码", b"renew_code")
-    ]
-    message = await event.respond(f'点击生成注册码或续期码\n使用前请先查看 WiKi, 否则造成的损失自付', buttons=keyboard)
-    await sleep(10)
-    await message.delete()
-
-async def handle_create_code_right(event):
-    tgid = event.sender_id
-    print(event.data.decode())
-
-    if event.data == b'renew_code':
-        func_bit = 0
-    elif event.data == b'activation_code':
-        func_bit = 1
-    else:
-        func_bit = 9
-        event.reply('无法创建正确的码')
-    result = await search_score(tgid)
-    value = int(init_renew_value())
-
-    if func_bit == 0:
-        await event.answer('正在生成续期码！')
-    elif func_bit == 1:
-        await event.answer('正在生成注册码！')
-
-    code, public_key, sha256_hash = await generate_code(tgid, func_bit)
-
-    if tgid in admin_ids:
-        code_time = datetime.now().date() + timedelta(days=90)
-    else:
-        code_time = datetime.now().date() + timedelta(days=30)
-        if result is not None and result[1] > value:
-            await change_score(tgid, -(value))
-        else:
-            await event.respond("积分不足, 无法生成")
-            
-    if tgid in admin_ids or (result is not None and result[1] > value):
-        await create_code(code, public_key, sha256_hash, func_bit, code_time)
-        if func_bit == 0:
-            await event.respond(f"你生成的续期码为:(点击复制) \n`{code}`\n有效期至 {code_time}")
-        elif func_bit == 1:
-            await event.respond(f"你生成的注册码为:(点击复制) \n`{code}`\n有效期至 {code_time}")
 
 # 续期
 async def handle_renew(event):

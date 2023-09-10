@@ -1,11 +1,12 @@
 from telethon import TelegramClient, events
 from app.telegram import handle_start, handle_help, handle_me, handle_info, handle_weblink
-from app.emby_accouts import handle_signup_method, handle_code_check, handle_delete, handle_renew, handle_create_code, handle_nsfw, handle_resetpw, handle_create_code_right
+from app.emby_accouts import handle_signup_method, handle_code_check, handle_delete, handle_renew, handle_nsfw, handle_resetpw
 from app.arr.search import handle_search, handle_add_search
 from app.data import load_config
 from app.scheduler import start_scheduler
 from app.score_man import handle_new_message, handle_settle, handle_change_score, handle_checkin
 from app.db import handle_get_renew
+from app.regcode import handle_create_code, handle_create_code_right
 from app.notify.webhook import run_webhook
 import asyncio
 
