@@ -6,6 +6,7 @@ from asyncio import sleep
 from app.data import load_config
 from app.arr.radarr import get_movie_info, add_movie
 from app.arr.sonarr import get_tv_info, add_tv
+from app.telethon_api import reply
 
 api_key = load_config()['OMDB']['API_KEY']
 data_info = {}
@@ -27,7 +28,7 @@ async def handle_search(client, event):
 
         await send_info(client, event, param, status)
     else:
-        await event.reply(f'上次执行时间: {last_runtime}, 请等待 10 分钟后执行')
+        await reply(event, f'上次执行时间: {last_runtime}, 请等待 10 分钟后执行')
 
 async def get_country(name):
     imdbId = name['imdbId']
@@ -52,7 +53,7 @@ async def send_info(client, event, param, status):
     elif status == '204':
         add_info = '请选择正确的分区, 点击后添加入库'
     else:
-        await event.reply('未找到')
+        await reply(event, '未找到')
 
     if status in ['200', '204']:
         title = data_info['title']
@@ -155,7 +156,7 @@ async def handle_add_search(client, event):
         else:
             status_code = await add_tv(data_info, rootFolderPath)
     if status_code in [200, 201]:
-        await event.reply('添加成功')
+        await reply(event, '添加成功')
         last_runtime = datetime.now()
         
         title = data_info['title']

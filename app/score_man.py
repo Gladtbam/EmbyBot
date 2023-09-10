@@ -1,11 +1,11 @@
 from telethon import types
 from datetime import datetime, timedelta
-from asyncio import sleep
 from app.data import load_config
 from app.telegram import send_scores_to_group, get_reply
 from app.db import search_score, search_user, change_score, update_checkin, update_limit, create_code, init_renew_value, update_score
 from app.regcode import generate_code
 from app.emby_api import User_Policy
+from app.telethon_api import reply
 from random import randint, choices
 
 group_id = load_config()['GROUP_ID']
@@ -85,9 +85,7 @@ async def handle_settle(client_user, event):
         await send_scores_to_group(client_user, group_id, user_score)
         user_msg_count.clear()                  # 清空字典
     else:
-        message = await event.reply('您非管理员, 无权执行此命令')
-        await sleep(30)
-        await message.delete()
+        await reply(event, '您非管理员, 无权执行此命令')
 
 # 修改积分
 async def handle_change_score(event):
@@ -98,9 +96,9 @@ async def handle_change_score(event):
     if reply_tgid is not None and tgid in admin_ids:
         await change_score(reply_tgid, int(score[0]))
         result_score = await search_score(reply_tgid)
-        await event.reply(f'已更改, 当前用户积分为 {result_score[1]}')
+        await reply(event, f'已更改, 当前用户积分为 {result_score[1]}')
     else:
-        await event.reply(f'你非管理员 或 请回复一条消息')
+        await reply(event, f'你非管理员 或 请回复一条消息')
 
 async def handle_checkin(client, event):
     tgid = event.sender_id
@@ -150,18 +148,15 @@ async def handle_checkin(client, event):
                 code, public_key, sha256_hash = await generate_code(admin_ids[0], 0)
                 await create_code(code, public_key, sha256_hash, 0, code_time)
                 message = '获得续期码(1月), 已私聊发送'
-                await client.send_message(tgid, f'续期码(1月):\n{code}')
+                await client.send_message(tgid, f'续期码(1月):\n`{code}`\n有效期至 {code_time}')
             elif roulette == 'signup_code':
                 code, public_key, sha256_hash = await generate_code(admin_ids[0], 1)
                 await create_code(code, public_key, sha256_hash, 1, code_time)
                 message = '获得注册码, 已私聊发送'
-                await client.send_message(tgid, f'注册码:\n{code}')
+                await client.send_message(tgid, f'注册码:\n`{code}`\n有效期至 {code_time}')
         await update_checkin(tgid)
     else:
         message = f'已签到, 上次签到时间: {result[3]}'
 
     # 删除消息
-    reply_message = await event.reply(message)
-    message_ids = [reply_message.id, reply_message.reply_to_msg_id]
-    await sleep(10)
-    await client.delete_messages(event.chat_id, message_ids)
+    await reply(event, message)

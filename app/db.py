@@ -4,6 +4,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from pandas import read_sql
 from app.data import load_config
+from app.telethon_api import respond
 
 
 db_user = load_config()['DataBase']['USER']
@@ -255,4 +256,4 @@ def init_renew_value():
     return mean_value if mean_value else 0
 
 async def handle_get_renew(event):
-    await event.respond(f'今日续期积分: {int(init_renew_value())}')
+    await respond(event, f'今日续期积分: {int(init_renew_value())}')

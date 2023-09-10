@@ -5,6 +5,7 @@ from app.emby_api import Ban_User, Delete_Ban, session_list
 from app.score_man import calculate_scores, user_msg_count
 from app.score_man import send_scores_to_group
 from app.data import load_config, get_server_load
+from asyncio import sleep
 
 chat_id = load_config()['GROUP_ID']
 scheduler = AsyncIOScheduler()
@@ -58,7 +59,9 @@ CPU 负载: {cpu_info}
 总下载量: {net_in_transfer}
 总上传量: {net_out_transfer}
 '''
-    await client_user.send_message(chat_id, message, parse_mode='Markdown')
+    messages = await client_user.send_message(chat_id, message, parse_mode='Markdown')
+    await sleep(1000)
+    await messages.delete()
 
 # 启动任务
 async def start_scheduler(client_user):

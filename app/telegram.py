@@ -3,6 +3,7 @@ from asyncio import sleep
 from app.db import search_user, change_score, search_score
 from app.emby_api import UserPlaylist
 from app.data import load_config
+from app.telethon_api import reply, respond
 
 admin_ids = load_config()['ADMIN_IDS']
 chat_id = load_config()['GROUP_ID']
@@ -14,7 +15,7 @@ signup_method = {"time": 0, "remain_num": 0.0}      # 注册方法
 signup_message = None
 
 async def handle_start(event):
-    await event.respond('欢迎使用机器人！')
+    await respond(event, '欢迎使用机器人！')
     await handle_help(event)
 
 async def handle_help(event):
@@ -31,12 +32,9 @@ async def handle_help(event):
 /change - [管理员]手动修改积分, 正数加负数减
     '''
     if event.is_private:
-        message = await event.respond(message, parse_mode='Markdown')
+        await respond(event, message, parse_mode='Markdown')
     else:
-        message = await event.reply(f'请私聊 {bot_name}')
-
-    await sleep(30)
-    await message.delete()
+        await reply(event, f'请私聊 {bot_name}')
 
 # 查看信息 (私人)
 async def handle_me(event):
@@ -82,11 +80,11 @@ async def handle_me(event):
 
     if event.is_private:
         if user_result is not None:
-            await event.respond(message, parse_mode='Markdown', buttons=keyboard)
+            await respond(event, message, parse_mode='Markdown', buttons=keyboard)
         else:
-            await event.respond(message, parse_mode='Markdown')
+            await respond(event, message, parse_mode='Markdown')
     else:
-        await event.reply('仅私聊')
+        await reply(event, '仅私聊')
 
 # 查看信息 (管理员)
 async def handle_info(event):
@@ -120,9 +118,9 @@ async def handle_info(event):
 '''
 
     if tgid in admin_ids:
-        await event.reply(message, parse_mode='Markdown')
+        await reply(event, message, parse_mode='Markdown')
     else:
-        await event.reply('您非管理员, 无权执行此命令')
+        await reply(event, '您非管理员, 无权执行此命令')
     
 
 # 获取回复信息的TG ID
@@ -132,9 +130,7 @@ async def get_reply(event):
     if reply_message:
         reply_tgid = reply_message.sender_id
     else:
-        message = await event.reply('请回复一条消息')
-        await sleep(30)
-        await message.delete()
+        await reply(event, '请回复一条消息')
     return reply_tgid
 
 # 发送积分更新消息
@@ -150,4 +146,10 @@ async def send_scores_to_group(client_user, group_id, user_scores):
 
 # 获取 Emby URL
 async def handle_weblink(event):
-    await event.respond(f'Emby 地址:\n`{emby_url}`')
+    await respond(event, f'Emby 地址:\n`{emby_url}`')
+
+# 删除消息
+async def delete_bot_message(event):
+    if "/" in event.message.text:
+        await sleep(10)
+        await event.message.delete()

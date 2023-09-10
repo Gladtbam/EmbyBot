@@ -1,10 +1,10 @@
 from datetime import datetime
-from asyncio import sleep
 from app.db import create_user, search_user, delete_user, search_code, delete_code, update_limit, change_score, search_score, init_renew_value
 from app.emby_api import New_User, User_Policy, Password, User_delete, UserPlaylist, Get_UserInfo
 from app.telegram import get_reply
 from app.data import load_config, parse_combined_duration
 from app.regcode import verify_code
+from app.telethon_api import reply, respond
 import re
 
 admin_ids = load_config()['ADMIN_IDS']
@@ -49,7 +49,7 @@ async def handle_signup_method(client, event):
             await handle_signup(client, event, tgid)
             await change_score(tgid, -(signup_value))
         else:
-            await event.reply('积分不足或未开放注册！！！\n如果有注册码, 请通过 `/code` 使用注册码注册')
+            await reply(event, '积分不足或未开放注册！！！\n如果有注册码, 请通过 `/code` 使用注册码注册')
 
 # 注册
 async def handle_signup(client, event, tgid):
@@ -86,13 +86,9 @@ async def handle_code_check(client, event):
         if event.is_private or tgid in admin_ids:
             await handle_code(client, event, tgid, code[0])
         else:
-            message = await event.reply('仅私聊')
-            await sleep(30)
-            await message.delete()
+            await reply(event, '仅私聊')
     else:
-        message = await event.reply('请回复一个“码”')
-        await sleep(30)
-        await message.delete()
+        await reply(event, '请回复一个“码”')
 
 async def handle_code(client, event, tgid, code):
 
@@ -104,7 +100,7 @@ async def handle_code(client, event, tgid, code):
             if func_bit == 1:           # 注册
                 await handle_signup(client, event, tgid)
                 await delete_code(code)
-                message = await event.respond('注册完成, 本次注册已使用注册码')
+                await respond(event, '注册完成, 本次注册已使用注册码')
             elif func_bit == 0:         # 续期
                 result_user = await search_user(tgid)
                 current_time = datetime.now().date()
@@ -117,18 +113,15 @@ async def handle_code(client, event, tgid, code):
                         if result_user[4] is True:                  # 解封Emby
                             BlockMedia = ("Japan")
                             await User_Policy(result_user[1], BlockMedia)
-                        message = await event.respond('续期成功')
+                        await respond(event, '续期成功')
                     else:
-                        message = await event.respond(f'离到期还有 {remain_day.days} 天\n目前小于 7 天才允许续期')
+                        await respond(event, f'离到期还有 {remain_day.days} 天\n目前小于 7 天才允许续期')
                 else:
-                    message = await event.respond('用户不存在, 请注册')
+                    await respond(event, '用户不存在, 请注册')
         else:
-            message = await event.respond('校验失败, 该“码”已失效, \n请检查您的“码”')
+            await respond(event, '校验失败, 该“码”已失效, \n请检查您的“码”')
     else:
-        message = await event.respond('该“码”不存在, 请输入正确的“码”')
-    
-    await sleep(30)
-    await message.delete() # type: ignore
+        await respond(event, '该“码”不存在, 请输入正确的“码”')
 
 # 删除 Emby 用户
 async def handle_delete(event):
@@ -139,14 +132,11 @@ async def handle_delete(event):
         if result and reply_tgid is not None:
             await delete_user(reply_tgid)
             await User_delete(result[1])
-            message = await event.reply(f'用户: {result[1]} 已删除')
+            await reply(event, f'用户: {result[1]} 已删除')
         else:
-            message = await event.reply('用户不存在')
+            await reply(event, '用户不存在')
     else:
-        message = await event.reply('您非管理员, 无权执行此命令')
-
-    await sleep(30)
-    await message.delete()
+        await reply(event, '您非管理员, 无权执行此命令')
 
 # 续期
 async def handle_renew(event):
@@ -169,18 +159,18 @@ async def handle_renew(event):
                 if result[4] is True:                  # 解封Emby
                     BlockMedia = ("Japan")
                     await User_Policy(result[1], BlockMedia)
-                await event.respond('续期成功')
+                await respond(event, '续期成功')
             else:
-                await event.respond(f'积分不足, 当前所需积分 {abs(renew_value)}(折扣后)')
+                await respond(event, f'积分不足, 当前所需积分 {abs(renew_value)}(折扣后)')
         else:
-            await event.respond(f'离到期还有 {remain_day.days} 天\n目前小于 7 天才允许续期')
+            await respond(event, f'离到期还有 {remain_day.days} 天\n目前小于 7 天才允许续期')
 
 # 密码重置
 async def handle_resetpw(event):
     tgid = event.sender_id
     result = await search_user(tgid)
     Pw = await Password(result[1])
-    await event.respond(f"密码已重置\n当前密码为: `{Pw}`\n请及时修改密码")
+    await respond(event, f"密码已重置\n当前密码为: `{Pw}`\n请及时修改密码")
 
 # NSFW 开关
 async def handle_nsfw(event):
@@ -191,8 +181,8 @@ async def handle_nsfw(event):
         if len(user_info["Policy"]["BlockedMediaFolders"]) > 0:
             BlockMedia = ()
             await User_Policy(result[1], BlockMedia)
-            await event.respond('NSFW On')
+            await respond(event, 'NSFW On')
         else:
             BlockMedia = ("Japan")
             await User_Policy(result[1], BlockMedia)
-            await event.respond('NSFW OFF')
+            await respond(event, 'NSFW OFF')

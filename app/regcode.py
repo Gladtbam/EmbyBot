@@ -6,6 +6,7 @@ from asyncio import sleep
 from app.db import create_code
 from app.db import change_score, search_score, init_renew_value
 from app.data import load_config
+from app.telethon_api import reply, respond
 
 admin_ids = load_config()['ADMIN_IDS']
 
@@ -45,9 +46,7 @@ async def handle_create_code(event):
         Button.inline("注册码", b"activation_code"),
         Button.inline("续期码", b"renew_code")
     ]
-    message = await event.respond(f'点击生成注册码或续期码\n使用前请先查看 WiKi, 否则造成的损失自付', buttons=keyboard)
-    await sleep(10)
-    await message.delete()
+    await respond(event, f'点击生成注册码或续期码\n使用前请先查看 WiKi, 否则造成的损失自付', buttons=keyboard)
 
 async def handle_create_code_right(event):
     tgid = event.sender_id
@@ -59,7 +58,7 @@ async def handle_create_code_right(event):
         func_bit = 1
     else:
         func_bit = 9
-        event.reply('无法创建正确的码')
+        await reply(event, '无法创建正确的码')
     result = await search_score(tgid)
     value = int(init_renew_value())
 
@@ -77,7 +76,7 @@ async def handle_create_code_right(event):
         if result is not None and result[1] > value:
             await change_score(tgid, -(value))
         else:
-            await event.respond("积分不足, 无法生成")
+            await respond(event, "积分不足, 无法生成")
             
     if tgid in admin_ids or (result is not None and result[1] > value):
         await create_code(code, public_key, sha256_hash, func_bit, code_time)

@@ -1,5 +1,5 @@
 from telethon import TelegramClient, events
-from app.telegram import handle_start, handle_help, handle_me, handle_info, handle_weblink
+from app.telegram import handle_start, handle_help, handle_me, handle_info, handle_weblink, delete_bot_message
 from app.emby_accouts import handle_signup_method, handle_code_check, handle_delete, handle_renew, handle_nsfw, handle_resetpw
 from app.arr.search import handle_search, handle_add_search
 from app.data import load_config
@@ -46,6 +46,7 @@ client.add_event_handler(lambda event: handle_add_search(client, event), events.
 
 # client.add_event_handler(lambda event: start_scheduler(client))
 client.add_event_handler(lambda event: handle_settle(client, event), events.NewMessage(pattern=fr'^/settle({bot_name})?$'))
+client.add_event_handler(lambda event: delete_bot_message(event), events.NewMessage())
 
 
 async def run_telegram(client):
