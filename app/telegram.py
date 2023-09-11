@@ -15,7 +15,7 @@ signup_method = {"time": 0, "remain_num": 0.0}      # 注册方法
 signup_message = None
 
 async def handle_start(event):
-    await respond(event, '欢迎使用机器人！')
+    await event.respond(f'欢迎使用 {bot_name} 机器人！')
     await handle_help(event)
 
 async def handle_help(event):
@@ -121,7 +121,7 @@ async def handle_info(event):
         await reply(event, message, parse_mode='Markdown')
     else:
         await reply(event, '您非管理员, 无权执行此命令')
-    
+
 
 # 获取回复信息的TG ID
 async def get_reply(event):

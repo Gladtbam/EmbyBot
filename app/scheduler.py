@@ -36,6 +36,7 @@ async def score_job(client_user):
 
 # @scheduler.scheduled_job('cron', hour=8, minute=0)
 async def server_load_job(client_user):
+    signup_value = int(init_renew_value()) * load_config()['SIGNUP']
     _session_list = await session_list()
     server_info = await get_server_load()
     cpu_info = "{:.3f}%".format(server_info['result'][0]['status']['CPU'])
@@ -58,6 +59,7 @@ CPU 负载: {cpu_info}
 实时上传: {net_out_speed}
 总下载量: {net_in_transfer}
 总上传量: {net_out_transfer}
+当前注册积分: {signup_value}
 '''
     messages = await client_user.send_message(chat_id, message, parse_mode='Markdown')
     await sleep(1000)
