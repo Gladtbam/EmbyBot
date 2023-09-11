@@ -62,7 +62,7 @@ CPU 负载: {cpu_info}
 当前注册积分: {signup_value}
 '''
     messages = await client_user.send_message(chat_id, message, parse_mode='Markdown')
-    await sleep(1000)
+    await sleep(3600)
     await messages.delete()
 
 # 启动任务
