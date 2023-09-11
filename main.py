@@ -8,6 +8,7 @@ from app.score_man import handle_new_message, handle_settle, handle_change_score
 from app.db import handle_get_renew
 from app.regcode import handle_create_code, handle_create_code_right
 from app.notify.webhook import run_webhook
+import logging
 import asyncio
 
 api_id = load_config()['Telegram']['API_ID']
@@ -15,6 +16,9 @@ api_hash = load_config()['Telegram']['API_HASH']
 bot_token = load_config()['Telegram']['BOT_TOKEN']
 bot_name = load_config()['Telegram']['BOT_NAME']
 chat_id = load_config()['GROUP_ID']
+
+logging.basicConfig(format='[%(levelname) 5s/%(asctime)s] %(name)s: %(message)s',
+                    level=logging.INFO)
 
 client = TelegramClient('bot', api_id, api_hash).start(bot_token=bot_token)
 # client_user = TelegramClient('user', api_id, api_hash)
@@ -58,4 +62,3 @@ if __name__ == '__main__':
     loop = asyncio.get_event_loop()
     tasks = [run_telegram(client)]
     loop.run_until_complete(asyncio.gather(*tasks))
-    
