@@ -153,7 +153,7 @@ async def handle_renew(event):
                 renew_value = 0
             else:
                 renew_value = -(int(int(init_renew_value()) * ( 1 - (0.5 * played_ratio))))
-            if int(score_result[1]) >= abs(renew_value):
+            if score_result is not None and int(score_result[1]) >= abs(renew_value):
                 await update_limit(tgid)
                 await change_score(tgid, renew_value)
                 if result[4] is True:                  # 解封Emby
@@ -169,8 +169,9 @@ async def handle_renew(event):
 async def handle_resetpw(event):
     tgid = event.sender_id
     result = await search_user(tgid)
-    Pw = await Password(result[1])
-    await respond(event, f"密码已重置\n当前密码为: `{Pw}`\n请及时修改密码")
+    if result is not None:
+        Pw = await Password(result[1])
+        await respond(event, f"密码已重置\n当前密码为: `{Pw}`\n请及时修改密码")
 
 # NSFW 开关
 async def handle_nsfw(event):

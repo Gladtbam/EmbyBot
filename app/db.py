@@ -115,10 +115,19 @@ async def search_score(tgid):
     session.close()
     return [score_.tgid, score_.value, score_.checkin, score_.checkintime.date()] if score_ else None
 
-# 删除用户(手动)
+# 删除 Emby 用户(手动)
 async def delete_user(tgid):
     session = create_session()
     del_user = delete(User).where(User.tgid == tgid)
+    session.execute(del_user)
+    session.commit()
+
+    session.close()
+
+# 删除积分账户
+async def delete_score_user(tgid):
+    session = create_session()
+    del_user = delete(Score).where(Score.tgid == tgid)
     session.execute(del_user)
     session.commit()
 

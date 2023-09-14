@@ -1,6 +1,6 @@
 from telethon import Button
 from asyncio import sleep
-from app.db import search_user, change_score, search_score, create_score_user
+from app.db import search_user, change_score, search_score, create_score_user, delete_user, delete_score_user
 from app.emby_api import UserPlaylist
 from app.data import load_config
 from app.telethon_api import reply, respond
@@ -160,3 +160,21 @@ async def delete_bot_message(event):
     if "/" in event.message.text:
         await sleep(10)
         await event.message.delete()
+
+# 用户入群/退群
+async def handle_add_chat(client, event):
+    if event.user_added or event.user_joined:
+        await create_score_user(event.user_id)
+    if event.user_left or (event.user_kicked and event.action_message is not None):
+        print(event)
+        await delete_score_user(event.user_id)
+        if await search_user(event.user_id) is not None:
+            await delete_user(event.user_id)
+
+    if event.user_kicked and event.action_message is not None:
+        user_info = await client.get_entity(event.user_id)
+        username = user_info.first_name + ' ' + user_info.last_name if user_info.last_name else user_info.first_name
+        message = f"[{username}](tg://user?id={event.user_id}) 被管理员踢出"
+        messages = await client.send_message(chat_id, message, parse_mode='Markdown')
+        await sleep(10)
+        await messages.delete()
