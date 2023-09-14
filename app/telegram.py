@@ -1,6 +1,6 @@
 from telethon import Button
 from asyncio import sleep
-from app.db import search_user, change_score, search_score
+from app.db import search_user, change_score, search_score, create_score_user
 from app.emby_api import UserPlaylist
 from app.data import load_config
 from app.telethon_api import reply, respond
@@ -13,6 +13,13 @@ emby_url = load_config()['Emby']['URL']
 
 signup_method = {"time": 0, "remain_num": 0.0}      # 注册方法
 signup_message = None
+
+async def start_init(client):
+    async for user in client.iter_participants(chat_id):
+        if user.bot is False:
+            result = await search_score(user.id)
+            if result is None:
+                await create_score_user(user.id)
 
 async def handle_start(event):
     await event.respond(f'欢迎使用 {bot_name} 机器人！')

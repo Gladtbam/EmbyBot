@@ -56,7 +56,7 @@ def create_session():
     session = Session()
     return session
 
-# 创建用户
+# 创建 Emby 用户
 async def create_user(tgid, embyid, embyname):
     session = create_session()
 
@@ -67,16 +67,24 @@ async def create_user(tgid, embyid, embyname):
         one_month_later = current_time + timedelta(days=30)
 
     # 创建用户
-    user = User(tgid=tgid, embyid=embyid, embyname=embyname, limitdate=one_month_later, ban=False) # type: ignore
+    user = User(tgid=tgid, embyid=embyid, embyname=embyname, limitdate=one_month_later, ban=False)
     session.add(user)
     session.commit()
 
     session.close()
 
+# 创建积分用户
+async def create_score_user(tgid):
+    session = create_session()
+    new_score = Score(tgid=tgid, value=0, checkin=0, checkintime=datetime(1970, 1, 1))
+    session.add(new_score)
+    session.commit()
+    session.close()
+
 # 创建 码
 async def create_code(code, public_key, sha256_hash, data, deltime):
     session = create_session()
-    code = Code(codes=code, verify_key=public_key, sha256_hash=sha256_hash, data=data, deltime=deltime) # type: ignore
+    code = Code(codes=code, verify_key=public_key, sha256_hash=sha256_hash, data=data, deltime=deltime)
     session.add(code)
     session.commit()
     session.close()
@@ -142,9 +150,6 @@ async def change_score(tgid, score_value):
     exist_score = session.query(Score).get(tgid)
     if exist_score:
         exist_score.value += score_value
-    else:
-        new_score = Score(tgid=tgid, value=score_value, checkin=0, checkintime=datetime(1970, 1, 1)) # type: ignore
-        session.add(new_score)
     session.commit()
     session.close()
 
@@ -156,9 +161,6 @@ async def update_checkin(tgid):
     if result:
         result.checkintime = current_time
         result.checkin += 1
-    else:
-        new_score = Score(tgid=tgid, value=0, checkin=1, checkintime=current_time) # type: ignore
-        session.add(new_score)
     session.commit()
     session.close()
 
@@ -172,9 +174,9 @@ async def ban_user():
     emby_ids = []
 
     for user in user_ban:
-        user.ban = True
+        user.ban = True  # type: ignore
         emby_ids.append(user.embyid)                # 被封禁的用户Emby ID列表
-        user.deletedate = one_week_later            # 被封禁用户待删除的时间
+        user.deletedate = one_week_later            # type: ignore # 被封禁用户待删除的时间
 
     session.commit()
     session.close()
@@ -209,9 +211,6 @@ async def update_score(use_ratios, total_score):
         exist_score = session.query(Score).get(user_id)         # 查询是否存在相同的记录
         if exist_score:
             exist_score.value += score_value
-        else:
-            new_score = Score(tgid=user_id, value=score_value, checkin=0, checkintime=datetime(1970, 1, 1)) # type: ignore
-            session.add(new_score)
 
         user_score[user_id] = score_value
     session.commit()
@@ -226,11 +225,12 @@ async def update_limit(tgid, days=30):
     update_time = current_time + timedelta(days=days)
 
     user = session.query(User).get(tgid)
-    if user.ban == True:
-        user.ban = False
-        user.limitdate = update_time
-    else:
-        user.limitdate = user.limitdate + timedelta(days=days)
+    if user is not None:
+        if user.ban == True:
+            user.ban = False
+            user.limitdate = update_time
+        else:
+            user.limitdate = user.limitdate + timedelta(days=days)
 
     session.commit()
     session.close()
@@ -240,7 +240,7 @@ def init_renew_value():
     # scores = session.query(Score).all()
     # value_list = [scores.value for scores in scores]
     query = session.query(Score.value)
-    df = read_sql(query.statement, query.session.bind)
+    df = read_sql(query.statement, query.session.bind) # type: ignore
     non_zero_values = df[df['value'] != 0]['value']
     mean_value = non_zero_values.mean()
     median_value = non_zero_values.median()

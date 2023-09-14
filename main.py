@@ -1,5 +1,6 @@
 from telethon import TelegramClient, events
 from app.telegram import handle_start, handle_help, handle_me, handle_info, handle_weblink, delete_bot_message
+from app.telegram import start_init
 from app.emby_accouts import handle_signup_method, handle_code_check, handle_delete, handle_renew, handle_nsfw, handle_resetpw
 from app.arr.search import handle_search, handle_add_search
 from app.data import load_config
@@ -56,6 +57,7 @@ client.add_event_handler(lambda event: delete_bot_message(event), events.NewMess
 async def run_telegram(client):
     await client.start()
     await start_scheduler(client)
+    await start_init(client)
     await client.run_until_disconnected()
 
 if __name__ == '__main__':
