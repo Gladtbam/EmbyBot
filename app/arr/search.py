@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from telethon import events, Button
 from telethon.tl.types import PeerChannel
 from asyncio import sleep
-from app.data import load_config
+from app.tools import load_config
 from app.arr.radarr import get_movie_info, add_movie
 from app.arr.sonarr import get_tv_info, add_tv
 from app.telethon_api import reply

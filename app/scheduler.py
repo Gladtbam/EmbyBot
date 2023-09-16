@@ -4,7 +4,7 @@ from app.db import ban_user, delete_ban, update_score, del_limit_code, init_rene
 from app.emby_api import Ban_User, Delete_Ban, session_list
 from app.score_man import calculate_scores, user_msg_count
 from app.score_man import send_scores_to_group
-from app.data import load_config, get_server_load
+from app.tools import load_config, get_server_load
 from asyncio import sleep
 
 chat_id = load_config()['GROUP_ID']

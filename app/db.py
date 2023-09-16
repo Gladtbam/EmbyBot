@@ -3,7 +3,7 @@ from sqlalchemy import create_engine, Column, Integer, String, DateTime, Boolean
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from pandas import read_sql
-from app.data import load_config
+from app.tools import load_config
 from app.telethon_api import respond
 
 

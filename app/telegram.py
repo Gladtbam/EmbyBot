@@ -2,7 +2,7 @@ from telethon import Button
 from asyncio import sleep
 from app.db import search_user, change_score, search_score, create_score_user, delete_user, delete_score_user
 from app.emby_api import UserPlaylist
-from app.data import load_config
+from app.tools import load_config
 from app.telethon_api import reply, respond
 
 admin_ids = load_config()['ADMIN_IDS']

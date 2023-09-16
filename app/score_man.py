@@ -1,6 +1,6 @@
 from telethon import types
 from datetime import datetime, timedelta
-from app.data import load_config
+from app.tools import load_config
 from app.telegram import send_scores_to_group, get_reply
 from app.db import search_score, search_user, change_score, update_checkin, update_limit, create_code, init_renew_value, update_score
 from app.regcode import generate_code

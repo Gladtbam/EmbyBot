@@ -1,4 +1,4 @@
-from app.data import load_config
+from app.tools import load_config
 import requests
 import re
 

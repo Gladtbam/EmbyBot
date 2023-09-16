@@ -3,7 +3,7 @@ import json
 import random
 import string
 import aiohttp
-from app.data import load_config
+from app.tools import load_config
 
 emby_url = load_config()['Emby']['URL']
 api_key = load_config()['Emby']['API_KEY']

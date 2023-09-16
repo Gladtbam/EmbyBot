@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from asyncio import sleep
 from app.db import create_code
 from app.db import change_score, search_score, init_renew_value
-from app.data import load_config
+from app.tools import load_config
 from app.telethon_api import reply, respond
 
 admin_ids = load_config()['ADMIN_IDS']

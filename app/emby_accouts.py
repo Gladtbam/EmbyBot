@@ -2,7 +2,7 @@ from datetime import datetime
 from app.db import create_user, search_user, delete_user, search_code, delete_code, update_limit, change_score, search_score, init_renew_value
 from app.emby_api import New_User, User_Policy, Password, User_delete, UserPlaylist, Get_UserInfo
 from app.telegram import get_reply
-from app.data import load_config, parse_combined_duration
+from app.tools import load_config, parse_combined_duration
 from app.regcode import verify_code
 from app.telethon_api import reply, respond
 import re
