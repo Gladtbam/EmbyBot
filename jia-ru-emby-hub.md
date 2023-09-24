@@ -12,6 +12,7 @@ description: How to Join
 2. 公开注册，会不定时开放注册，每次开放注册至少10人以上
 3. 和服主PY
 4. 付费支持（暂未开放，短时间内不做付费考虑）
+5. 积分注册，与保号所需积分等同
 
 ## 积分获取方式
 
@@ -37,7 +38,7 @@ description: How to Join
 3. 输入`/signup`
 4. 如果限制的注册名额满了将会无法注册
 
-#### 注意：在注册前确保私聊过 Bot，并且设置了Telegram 用户名
+#### <mark style="color:white;background-color:black;">注意：在注册前确保私聊过 Bot，并且设置了Telegram 用户名，未达要求所造成的损失本服不负责</mark>
 
 
 
