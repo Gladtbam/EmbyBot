@@ -8,9 +8,10 @@ from app.scheduler import start_scheduler
 from app.score_man import handle_new_message, handle_settle, handle_change_score, handle_checkin
 from app.db import handle_get_renew
 from app.regcode import handle_create_code, handle_create_code_right
-from app.notify.webhook import run_webhook
+# from app.notify.webhook import run_webhook
 import logging
 import asyncio
+from os import makedirs, path
 
 api_id = load_config()['Telegram']['API_ID']
 api_hash = load_config()['Telegram']['API_HASH']
@@ -18,8 +19,13 @@ bot_token = load_config()['Telegram']['BOT_TOKEN']
 bot_name = load_config()['Telegram']['BOT_NAME']
 chat_id = load_config()['GROUP_ID']
 
+# 创建 log 文件夹
+makedirs('log', exist_ok=True)
+info_log = path.join('log', 'info.log')
+
 logging.basicConfig(format='[%(levelname) 5s/%(asctime)s] %(name)s: %(message)s',
-                    level=logging.INFO)
+                    level=logging.INFO,
+                    filename=info_log)
 
 client = TelegramClient('bot', api_id, api_hash).start(bot_token=bot_token)
 # client_user = TelegramClient('user', api_id, api_hash)
