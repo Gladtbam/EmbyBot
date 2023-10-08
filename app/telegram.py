@@ -142,12 +142,14 @@ async def get_reply(event):
 
 # 发送积分更新消息
 async def send_scores_to_group(client_user, group_id, user_scores):
-    message = "昨日积分获取情况：\n\n"
+    message = "活跃积分获取情况：\n\n"
     for user_id, score_value in user_scores.items():
         if score_value != 1:
             user = await client_user.get_entity(user_id)
             username = user.first_name + ' ' + user.last_name if user.last_name else user.first_name
             message += f"[{username}](tg://user?id={user_id}) 获得: {score_value} 积分\n"
+        else:
+            message += "\t无活跃积分大于 1 的成员"
 
     await client_user.send_message(group_id, message, parse_mode='Markdown')
 

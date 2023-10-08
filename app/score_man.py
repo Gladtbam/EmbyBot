@@ -156,7 +156,7 @@ async def handle_checkin(client, event):
                 await client.send_message(tgid, f'注册码:\n`{code}`\n有效期至 {code_time}')
         await update_checkin(tgid)
     else:
-        message = f'已签到, 上次签到时间: {result[3]}'
+        message = '今日已签到, 禁止重复签到'
 
     # 删除消息
     await reply(event, message)
