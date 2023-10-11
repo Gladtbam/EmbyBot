@@ -148,8 +148,6 @@ async def send_scores_to_group(client_user, group_id, user_scores):
             user = await client_user.get_entity(user_id)
             username = user.first_name + ' ' + user.last_name if user.last_name else user.first_name
             message += f"[{username}](tg://user?id={user_id}) 获得: {score_value} 积分\n"
-        else:
-            message += "\t无活跃积分大于 1 的成员"
 
     await client_user.send_message(group_id, message, parse_mode='Markdown')
 
