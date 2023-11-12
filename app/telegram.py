@@ -74,7 +74,7 @@ async def handle_me(event):
     else:
         message = f'**尚无 Emby 账户**\n'
     if score_result is None:
-        await change_score(tgid, 0)
+        await create_score_user(tgid, 0)
         message += f'''
 **积分**: 0
 **签到天数**: 0
@@ -114,14 +114,14 @@ async def handle_info(event):
     else:
         message = f'**尚无 Emby 账户**\n'
     if score_result is None:
-        await change_score(tgid, 0)
+        await create_score_user(reply_tgid, 0)
         message += f'''
 **积分**: 0
 **签到天数**: 0
 '''
     else:
         message += f'''
-**Telegram ID**: `{tgid}`
+**Telegram ID**: `{reply_tgid}`
 **积分**: `{score_result[1]}`
 **签到天数**: `{score_result[2]}`
 '''
