@@ -81,6 +81,7 @@ async def handle_me(event):
 '''
     else:
         message += f'''
+**Telegram ID**: `{tgid}`
 **积分**: `{score_result[1]}`
 **签到天数**: `{score_result[2]}`
 '''
@@ -120,6 +121,7 @@ async def handle_info(event):
 '''
     else:
         message += f'''
+**Telegram ID**: `{tgid}`
 **积分**: `{score_result[1]}`
 **签到天数**: `{score_result[2]}`
 '''
