@@ -1,0 +1,11 @@
+{
+    "configurations": [
+        {
+            "name": "C#: EmbyBot",
+            "type": "dotnet",
+            "request": "launch",
+            "projectPath": "${workspaceFolder}\\EmbyBot.csproj",
+            "launchConfigurationId": "TargetFramework=;EmbyBot"
+        }
+    ]
+}
