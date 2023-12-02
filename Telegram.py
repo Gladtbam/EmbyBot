@@ -1,4 +1,4 @@
-from LoadConfig import load_config
+from LoadConfig import init_config
 from telethon import TelegramClient, events, Button
 from telethon.tl.types import PeerUser, PeerChat, PeerChannel
 from telethon.tl.functions.messages import GetHistoryRequest
@@ -8,7 +8,7 @@ from telethon.tl.functions.users import GetFullUserRequest
 import asyncio
 import logging
 
-config = load_config()
+config = init_config()
 
 client = TelegramClient('session', config.telegram.ApiId, config.telegram.ApiHash).start(bot_token=config.telegram.Token) # type: ignore
 

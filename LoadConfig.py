@@ -7,7 +7,7 @@ from typing import Optional, List
 @dataclass
 class DataBase:
     Host: Optional[str] = None
-    Port: int = 3306
+    Port: int = 3066
     User: Optional[str] = None
     Password: Optional[str] = None
     Database: Optional[str] = None
@@ -86,7 +86,7 @@ def load_config():
             config_dict = yaml.safe_load(file)
             return Config.from_dict(config_dict) # type: ignore
     except FileNotFoundError:
-        return Config()
+        return None
 
 def save_config(config):
     with open('config.yaml', 'w') as file:

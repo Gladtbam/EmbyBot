@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, Boolean, func
+from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, ForeignKey, Boolean, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from LoadConfig import load_config
@@ -13,7 +13,7 @@ Session = sessionmaker(bind=engine)
 Base = declarative_base()
 class User(Base):
     __tablename__ = 'Users'
-    TelegramId = Column(Integer, primary_key=True)
+    TelegramId = Column(String(20), primary_key=True)
     Score = Column(Integer)
     Checkin = Column(Integer)
     Warning = Column(Integer)
@@ -21,17 +21,17 @@ class User(Base):
 
 class Emby(Base):
     __tablename__ = 'Emby'
-    TelegramId = Column(Integer, ForeignKey('Users.TelegramId'), primary_key=True)
-    EmbyId = Column(String)
-    EmbyName = Column(String)
+    TelegramId = Column(String(20), ForeignKey('Users.TelegramId'), primary_key=True)
+    EmbyId = Column(Text)
+    EmbyName = Column(Text)
     LimitDate = Column(DateTime)
     Ban = Column(Boolean)
     deleteDate = Column(DateTime)
 
 class Code(Base):
     __tablename__ = 'Codes'
-    CodeId = Column(String, primary_key=True)
-    TimeStamp = Column(String)
+    CodeId = Column(String(255), primary_key=True)
+    TimeStamp = Column(Text)
 
 Base.metadata.create_all(engine)
 
@@ -40,7 +40,7 @@ async def CreateUser(TelegramId):
         session = Session()
         user = session.query(User).get(TelegramId)
         if user is None:
-            session.add(User(TelegramId=TelegramId, Score=0, Checkin=0, Warning=0, LastCheckin=datetime.now()))
+            session.add(User(TelegramId=TelegramId, Score=0, Checkin=0, Warning=0, LastCheckin=datetime.now().date()))
             session.commit()
             session.close()
             logging.info(f'User {TelegramId} created successfully.')
