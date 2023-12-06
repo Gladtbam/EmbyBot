@@ -6,11 +6,11 @@ from typing import Optional, List
 @dataclass_json
 @dataclass
 class DataBase:
-    Host: Optional[str] = None
-    Port: int = 3066
+    Host: Optional[str] = 'localhost'
+    Port: Optional[int] = 3066
     User: Optional[str] = None
     Password: Optional[str] = None
-    Database: Optional[str] = None
+    DatabaseName: Optional[str] = None
 
 @dataclass_json
 @dataclass

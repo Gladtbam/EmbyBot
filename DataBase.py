@@ -1,23 +1,24 @@
 from datetime import datetime, timedelta
-from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, ForeignKey, Boolean, func
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean, select, delete, func
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
-from LoadConfig import load_config
+from LoadConfig import init_config
 import logging
+import asyncio
 
-config = load_config()
+config = init_config()
 
-engine = create_engine(f'mysql+mysqlconnector://{config.dataBase.User}:{config.dataBase.Password}@{config.dataBase.Host}:{config.dataBase.Port}/{config.dataBase.Database}')
-Session = sessionmaker(bind=engine)
+engine = create_async_engine(f'mysql+asyncmy://{config.dataBase.User}:{config.dataBase.Password}@{config.dataBase.Host}:{config.dataBase.Port}/{config.dataBase.DatabaseName}')
 
 Base = declarative_base()
 class User(Base):
     __tablename__ = 'Users'
     TelegramId = Column(String(20), primary_key=True)
-    Score = Column(Integer)
-    Checkin = Column(Integer)
-    Warning = Column(Integer)
-    LastCheckin = Column(DateTime)
+    Score = Column(Integer, default=0)
+    Checkin = Column(Integer, default=0)
+    Warning = Column(Integer, default=0)
+    LastCheckin = Column(DateTime, default=datetime.now().date())
 
 class Emby(Base):
     __tablename__ = 'Emby'
@@ -25,7 +26,7 @@ class Emby(Base):
     EmbyId = Column(Text)
     EmbyName = Column(Text)
     LimitDate = Column(DateTime)
-    Ban = Column(Boolean)
+    Ban = Column(Boolean, default=False)
     deleteDate = Column(DateTime)
 
 class Code(Base):
@@ -33,249 +34,278 @@ class Code(Base):
     CodeId = Column(String(255), primary_key=True)
     TimeStamp = Column(Text)
 
-Base.metadata.create_all(engine)
+async def init_db():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+        await engine.dispose()
 
-async def CreateUser(TelegramId):
-    try:
-        session = Session()
-        user = session.query(User).get(TelegramId)
-        if user is None:
-            session.add(User(TelegramId=TelegramId, Score=0, Checkin=0, Warning=0, LastCheckin=datetime.now().date()))
-            session.commit()
-            session.close()
-            logging.info(f'User {TelegramId} created successfully.')
-            return True
-        else:
-            logging.error(f'User {TelegramId} already exists.')
-            session.close()
-            return False
-    except Exception as e:
-        logging.error(f'Error occurred while creating user {TelegramId}: {e}')
-        return False
-async def DeleteUser(TelegramId):
-    try:
-        session = Session()
-        session.query(User).filter(User.TelegramId == TelegramId).delete()
-        session.commit()
-        session.close()
-        logging.info(f'User {TelegramId} deleted successfully.')
-        return True
-    except Exception as e:
-        logging.error(f'Error occurred while deleting user {TelegramId}: {e}')
-        return False
+def run_init_db():
+    asyncio.run(init_db())
+
 async def GetUser(TelegramId):
-    try:
-        session = Session()
-        user = session.query(User).get(TelegramId)
-        session.close()
-        return user
-    except Exception as e:
-        logging.error(f'Error occurred while getting user {TelegramId}: {e}')
-        return None
-async def ChangeUserScore(TelegramId, Score):
-    try:
-        session = Session()
-        user = session.query(User).get(TelegramId)
-        if user is not None:
-            user.Score += Score
-            session.commit()
-            session.close()
-            logging.info(f'User {TelegramId} score changed successfully.')
-            return True
-        else:
-            logging.error(f'User {TelegramId} not found.')
-            return False
-    except Exception as e:
-        logging.error(f'Error occurred while changing user {TelegramId} score: {e}')
-        return False
-async def ChangeUserCheckin(TelegramId):
-    try:
-        session = Session()
-        user = session.query(User).get(TelegramId)
-        if user is not None:
-            user.Checkin += 1 # type: ignore
-            user.LastCheckin = datetime.now().date() # type: ignore
-            session.commit()
-            session.close()
-            logging.info(f'User {TelegramId} checkin changed successfully.')
-            return True
-        else:
-            logging.error(f'User {TelegramId} not found.')
-            return False
-    except Exception as e:
-        logging.error(f'Error occurred while changing user {TelegramId} checkin: {e}')
-        return False
-async def ChangeUserWarning(TelegramId, Warning=1):
-    try:
-        session = Session()
-        user = session.query(User).get(TelegramId)
-        if user is not None:
-            user.Warning += Warning # type: ignore
-            session.commit()
-            session.close()
-            logging.info(f'User {TelegramId} warning changed successfully.')
-            return True
-        else:
-            logging.error(f'User {TelegramId} not found.')
-            return False
-    except Exception as e:
-        logging.error(f'Error occurred while changing user {TelegramId} warning: {e}')
-        return False
-    
-async def CreateEmbyUser(TelegramId, EmbyId, EmbyName):
-    try:
-        if TelegramId in config.other.AdminId:
-            LimitDate = datetime.now().date() + timedelta(weeks=4752)
-        else:
-            LimitDate = datetime.now().date() + timedelta(days=30)
-        session = Session()
-        session.add(Emby(TelegramId=TelegramId, EmbyId=EmbyId, EmbyName=EmbyName, LimitDate=LimitDate, Ban=False))
-        session.commit()
-        session.close()
-        logging.info(f'Emby user {EmbyId} created successfully.')
-        return True
-    except Exception as e:
-        logging.error(f'Error occurred while creating Emby user {EmbyId}: {e}')
-        return False
-async def DeleteEmbyUser(TelegramId):
-    try:
-        session = Session()
-        user = session.query(Emby).filter(Emby.TelegramId == TelegramId).delete()
-        session.commit()
-        session.close()
-        logging.info(f'Emby user {TelegramId} deleted successfully.')
-        return user
-    except Exception as e:
-        logging.error(f'Error occurred while deleting Emby user {TelegramId}: {e}')
-        return None
-async def GetEmbyUser(TelegramId):
-    try:
-        session = Session()
-        emby = session.query(Emby).filter(Emby.TelegramId == TelegramId).first()
-        session.close()
-        return emby
-    except Exception as e:
-        logging.error(f'Error occurred while getting Emby user {TelegramId}: {e}')
-        return None
-async def BanEmbyUser():
-    try:
-        seesion = Session()
-        users = seesion.query(Emby).filter(Emby.LimitDate < datetime.now().date(), Emby.Ban == False).all()
-        embyIds = []
-        for user in users:
-            user.Ban = True # type: ignore
-            embyIds.append(user.EmbyId)
-            user.deleteDate = datetime.now().date() + timedelta(days=7) # type: ignore
-        seesion.commit()
-        seesion.close()
-        logging.info(f'Emby users {embyIds} banned successfully.')
-        return embyIds
-    except Exception as e:
-        logging.error(f'Error occurred while banning Emby users: {e}')
-        return None
-async def DeleteBanEmbyUser():
-    try:
-        seesion = Session()
-        users = seesion.query(Emby).filter(Emby.deleteDate < datetime.now().date(), Emby.Ban == True).all()
-        embyIds = []
-        for user in users:
-            embyIds.append(user.EmbyId)
-            seesion.query(Emby).filter(Emby.TelegramId == user.TelegramId).delete()
-        seesion.commit()
-        seesion.close()
-        logging.info(f'Emby users {embyIds} deleted successfully.')
-        return embyIds
-    except Exception as e:
-        logging.error(f'Error occurred while deleting Emby users: {e}')
-        return None
+    async with AsyncSession(engine) as session:
+        async with session.begin():
+            try:
+                return await session.get(User, TelegramId)
+            except Exception as e:
+                logging.error(f'Error occurred while getting user {TelegramId}: {e}')
+                return None
+            
+async def CreateUsers(TelegramId):
+    async with AsyncSession(engine) as session:
+        async with session.begin():
+            try:
+                if await session.get(User, TelegramId) is None:
+                    user = User(TelegramId=TelegramId)
+                    session.add(user)
+                    await session.commit()
+                    return True
+                else:
+                    return False
+            except Exception as e:
+                logging.error(f'Error occurred while creating user {TelegramId}: {e}')
+                await session.rollback()
+                return False
+
+async def DeleteUser(TelegramId):
+    async with AsyncSession(engine) as session:
+        async with session.begin():
+            try:
+                user = await session.get(User, TelegramId)
+                if user is None:
+                    return False
+                else:
+                    await session.delete(user)
+                    await session.commit()
+                    return True
+            except Exception as e:
+                logging.error(f'Error occurred while deleting user {TelegramId}: {e}')
+                await session.rollback()
+                return False
+            
+async def ChangeScore(TelegramId, Score):
+    async with AsyncSession(engine) as session:
+        async with session.begin():
+            try:
+                user = await session.get(User, TelegramId)
+                if user is None:
+                    session.add(User(TelegramId=TelegramId, Score=Score))
+                else:
+                    user.Score += Score
+                await session.commit()
+                return True
+            except Exception as e:
+                logging.error(f'Error occurred while changing score of user {TelegramId}: {e}')
+                await session.rollback()
+                return False
+
+async def ChangeCheckin(TelegramId):
+    async with AsyncSession(engine) as session:
+        async with session.begin():
+            try:
+                user = await session.get(User, TelegramId)
+                if user is None:
+                    session.add(User(TelegramId=TelegramId, Checkin=1))
+                else:
+                    user.Checkin += 1 # type: ignore
+                    user.LastCheckin = datetime.now().date() # type: ignore
+                await session.commit()
+                return True
+            except Exception as e:
+                logging.error(f'Error occurred while changing checkin of user {TelegramId}: {e}')
+                await session.rollback()
+                return False
+            
+async def ChangeWarning(TelegramId):
+    async with AsyncSession(engine) as session:
+        async with session.begin():
+            try:
+                user = await session.get(User, TelegramId)
+                if user is None:
+                    session.add(User(TelegramId=TelegramId, Warning=1))
+                else:
+                    user.Warning += 1 # type: ignore
+                await session.commit()
+                return True
+            except Exception as e:
+                logging.error(f'Error occurred while changing warning of user {TelegramId}: {e}')
+                await session.rollback()
+                return False
+
+async def GetEmby(TelegramId):
+    async with AsyncSession(engine) as session:
+        async with session.begin():
+            try:
+                return await session.get(Emby, TelegramId)
+            except Exception as e:
+                logging.error(f'Error occurred while getting emby {TelegramId}: {e}')
+                return None
+                       
+async def CreateEmby(TelegramId, EmbyId, EmbyName):
+    async with AsyncSession(engine) as session:
+        async with session.begin():
+            try:
+                if TelegramId in config.other.AdminId:
+                    LimitDate = datetime.now() + timedelta(weeks=4752)
+                else:
+                    LimitDate = datetime.now() + timedelta(days=30)
+                if await session.get(Emby, TelegramId) is None:
+                    emby = Emby(TelegramId=TelegramId, EmbyId=EmbyId, EmbyName=EmbyName, LimitDate=LimitDate)
+                    session.add(emby)
+                    await session.commit()
+                    return True
+                else:
+                    return False
+            except Exception as e:
+                logging.error(f'Error occurred while creating emby {TelegramId}: {e}')
+                await session.rollback()
+                return False
+            
+async def DeleteEmby(TelegramId):
+    async with AsyncSession(engine) as session:
+        async with session.begin():
+            try:
+                emby = await session.get(Emby, TelegramId)
+                if emby is None:
+                    return False
+                else:
+                    await session.delete(emby)
+                    await session.commit()
+                    return True
+            except Exception as e:
+                logging.error(f'Error occurred while deleting emby {TelegramId}: {e}')
+                await session.rollback()
+                return False
+            
+async def LimitEmbyBan():
+    async with AsyncSession(engine) as session:
+        async with session.begin():
+            try:
+                emby = await session.execute(select(Emby).where(Emby.LimitDate < datetime.now().date(), Emby.Ban == False))
+                embyIds = []
+                for i in emby.scalars():
+                    i.Ban = True
+                    i.deleteDate = datetime.now().date() + timedelta(days=7)
+                    embyIds.append(i.EmbyId)
+                await session.commit()
+                return embyIds
+            except Exception as e:
+                logging.error(f'Error occurred while limiting emby ban: {e}')
+                await session.rollback()
+                return None
+            
+async def LimitEmbyDelete():
+    async with AsyncSession(engine) as session:
+        async with session.begin():
+            try:
+                emby = await session.execute(select(Emby).where(Emby.deleteDate < datetime.now().date(), Emby.Ban == True))
+                embyIds = []
+                for i in emby.scalars():
+                    await session.delete(i)
+                    embyIds.append(i.EmbyId)
+                await session.commit()
+                return embyIds
+            except Exception as e:
+                logging.error(f'Error occurred while limiting emby delete: {e}')
+                await session.rollback()
+                return None
+            
 async def UpdateLimitDate(TelegramId, days=30):
-    try:
-        session = Session()
-        user = session.query(Emby).filter(Emby.TelegramId == TelegramId).first()
-        if user is not None:
-            user.LimitDate = datetime.now().date() + timedelta(days=days) # type: ignore
-            user.Ban = False # type: ignore
-            session.commit()
-            session.close()
-            logging.info(f'Emby user {TelegramId} LimitDate changed successfully.')
-            return True
-        else:
-            logging.error(f'Emby user {TelegramId} not found.')
-            return False
-    except Exception as e:
-        logging.error(f'Error occurred while changing Emby user {TelegramId} LimitDate: {e}')
-        return False
+    async with AsyncSession(engine) as session:
+        async with session.begin():
+            try:
+                emby = await session.get(Emby, TelegramId)
+                if emby is None:
+                    return False
+                else:
+                    emby.LimitDate = datetime.now().date() + timedelta(days=days)
+                    await session.commit()
+                    return True
+            except Exception as e:
+                logging.error(f'Error occurred while updating limit date of emby {TelegramId}: {e}')
+                await session.rollback()
+                return False
+            
 async def CreateCode(CodeId, TimeStamp):
-    try:
-        session = Session()
-        session.add(Code(CodeId=CodeId, TimeStamp=TimeStamp))
-        session.commit()
-        session.close()
-        logging.info(f'Code {CodeId} created successfully.')
-        return True
-    except Exception as e:
-        logging.error(f'Error occurred while creating code {CodeId}: {e}')
-        return False
+    async with AsyncSession(engine) as session:
+        async with session.begin():
+            try:
+                session.add(Code(CodeId=CodeId, TimeStamp=TimeStamp))
+                await session.commit()
+                return True
+            except Exception as e:
+                logging.error(f'Error occurred while creating code {CodeId}: {e}')
+                await session.rollback()
+                return False
 async def GetCode(CodeId):
-    try:
-        session = Session()
-        code = session.query(Code).filter(Code.CodeId == CodeId).first()
-        session.close()
-        return code
-    except Exception as e:
-        logging.error(f'Error occurred while getting code {CodeId}: {e}')
-        return None
+    async with AsyncSession(engine) as session:
+        async with session.begin():
+            try:
+                return await session.get(Code, CodeId)
+            except Exception as e:
+                logging.error(f'Error occurred while getting code {CodeId}: {e}')
+                return None
+            
 async def DeleteCode(CodeId):
-    try:
-        session = Session()
-        session.query(Code).filter(Code.CodeId == CodeId).delete()
-        session.commit()
-        session.close()
-        logging.info(f'Code {CodeId} deleted successfully.')
-        return True
-    except Exception as e:
-        logging.error(f'Error occurred while deleting code {CodeId}: {e}')
-        return False
+    async with AsyncSession(engine) as session:
+        async with session.begin():
+            try:
+                code = await session.get(Code, CodeId)
+                if code is None:
+                    return False
+                else:
+                    await session.delete(code)
+                    await session.commit()
+                    return True
+            except Exception as e:
+                logging.error(f'Error occurred while deleting code {CodeId}: {e}')
+                await session.rollback()
+                return False
+            
 async def DeleteLimitCode():
-    try:
-        session = Session()
-        session.query(Code).filter(Code.TimeStamp < (datetime.now() - timedelta(days=90)).timestamp()).delete()
-        session.commit()
-        session.close()
-        logging.info(f'Limit code deleted successfully.')
-        return True
-    except Exception as e:
-        logging.error(f'Error occurred while deleting limit code: {e}')
-        return False
-    
-async def SettleUserScore(UserRatio, TotalScore):
-    try:
-        session = Session()
-        userScore = {}
-        for userId, ratio in UserRatio.items():
-            userValue = int(TotalScore * ratio * 0.5)
-            if userValue < 1:
-                userValue = 1
-            user = session.query(User).filter(User.TelegramId == userId).first()
-            if user is not None:
-                user.Score += userValue # type: ignore
-            else:
-                session.add(User(TelegramId=userId, Score=userValue, Checkin=0, Warning=0, LastCheckin=datetime.now().date()))
-            userScore[userId] = userValue
-        session.commit()
-        session.close()
-        return userScore
-    except Exception as e:
-        logging.error(f'Error occurred while settling user score: {e}')
-        return None
-    
+    async with AsyncSession(engine) as session:
+        async with session.begin():
+            try:
+                await session.execute(delete(Code).where(Code.TimeStamp < (datetime.now() - timedelta(days=90)).timestamp()))
+                await session.commit()
+                return True
+            except Exception as e:
+                logging.error(f'Error occurred while deleting limit code: {e}')
+                await session.rollback()
+                return False
+            
+async def SettleScore(UserRatio, TotalScore):
+    async with AsyncSession(engine) as session:
+        async with session.begin():
+            try:
+                userScore = {}
+                for userId, ratio in UserRatio.items():
+                    userValue = int(TotalScore * ratio * 0.5)
+                    if userValue < 1:
+                        userValue = 1
+                    user = await session.get(User, userId)
+                    if user is None:
+                        session.add(User(TelegramId=userId, Score=userValue))
+                    else:
+                        user.Score += userValue
+                    userScore[userId] = userValue
+                await session.commit()
+                return userScore
+            except Exception as e:
+                logging.error(f'Error occurred while settling score: {e}')
+                await session.rollback()
+                return None
+            
 async def GetRenewValue():
-    try:
-        session = Session()
-        average = session.query(func.avg(User.Score)).filter(User.Score > 10).scalar()
-        if average < 100:
-            average = 100
-        return average
-    except Exception as e:
-        logging.error(f'Error occurred while getting renew value: {e}')
-        return 100
+    async with AsyncSession(engine) as session:
+        async with session.begin():
+            try:
+                renew = await session.execute(select(func.avg(User.Score)).where(User.Score > 10))
+                renew_value = renew.scalar()
+                if renew_value is None or renew_value < 100:
+                    renew_value = 100
+                return renew_value
+            except Exception as e:
+                logging.error(f'Error occurred while getting renew value: {e}')
+                await session.rollback()
+                return 100
