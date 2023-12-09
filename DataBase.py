@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean, select, delete, func
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean, select, delete, update, func
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
@@ -19,7 +19,9 @@ class User(Base):
     Checkin = Column(Integer, default=0)
     Warning = Column(Integer, default=0)
     LastCheckin = Column(DateTime, default=datetime.now().date())
-
+    def __repr__(self):
+        return f'<User(TelegramId={self.TelegramId}, Score={self.Score}, Checkin={self.Checkin}, Warning={self.Warning}, LastCheckin={self.LastCheckin})>'
+    
 class Emby(Base):
     __tablename__ = 'Emby'
     TelegramId = Column(String(20), ForeignKey('Users.TelegramId'), primary_key=True)
@@ -28,27 +30,35 @@ class Emby(Base):
     LimitDate = Column(DateTime)
     Ban = Column(Boolean, default=False)
     deleteDate = Column(DateTime)
-
+    def __repr__(self):
+        return f'<Emby(TelegramId={self.TelegramId}, EmbyId={self.EmbyId}, EmbyName={self.EmbyName}, LimitDate={self.LimitDate}, Ban={self.Ban}, deleteDate={self.deleteDate})>'
+    
 class Code(Base):
     __tablename__ = 'Codes'
     CodeId = Column(String(255), primary_key=True)
     TimeStamp = Column(Text)
-
+    Tag = Column(Text)
+    def __repr__(self):
+        return f'<Code(CodeId={self.CodeId}, TimeStamp={self.TimeStamp}), Tag={self.Tag}>'
+    
 async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
         await engine.dispose()
 
-def run_init_db():
-    asyncio.run(init_db())
-
 async def GetUser(TelegramId):
     async with AsyncSession(engine) as session:
         async with session.begin():
             try:
-                return await session.get(User, TelegramId)
+                user = await session.get(User, TelegramId)
+                if user is not None:
+                    session.expunge(user)
+                    return user
+                else:
+                    return None
             except Exception as e:
                 logging.error(f'Error occurred while getting user {TelegramId}: {e}')
+                await session.rollback()
                 return None
             
 async def CreateUsers(TelegramId):
@@ -99,16 +109,17 @@ async def ChangeScore(TelegramId, Score):
                 await session.rollback()
                 return False
 
-async def ChangeCheckin(TelegramId):
+async def ChangeCheckin(TelegramId, Socre=0):
     async with AsyncSession(engine) as session:
         async with session.begin():
             try:
                 user = await session.get(User, TelegramId)
                 if user is None:
-                    session.add(User(TelegramId=TelegramId, Checkin=1))
+                    session.add(User(TelegramId=TelegramId, Checkin=1, LastCheckin=datetime.now().date(), Score=Socre))
                 else:
                     user.Checkin += 1 # type: ignore
                     user.LastCheckin = datetime.now().date() # type: ignore
+                    user.Score += Socre # type: ignore
                 await session.commit()
                 return True
             except Exception as e:
@@ -122,9 +133,10 @@ async def ChangeWarning(TelegramId):
             try:
                 user = await session.get(User, TelegramId)
                 if user is None:
-                    session.add(User(TelegramId=TelegramId, Warning=1))
+                    session.add(User(TelegramId=TelegramId, Warning=1, Score=-1))
                 else:
                     user.Warning += 1 # type: ignore
+                    user.Score -= user.Warning # type: ignore
                 await session.commit()
                 return True
             except Exception as e:
@@ -136,7 +148,12 @@ async def GetEmby(TelegramId):
     async with AsyncSession(engine) as session:
         async with session.begin():
             try:
-                return await session.get(Emby, TelegramId)
+                emby = await session.get(Emby, TelegramId)
+                if emby is not None:
+                    session.expunge(emby)
+                    return  emby
+                else:
+                    return None
             except Exception as e:
                 logging.error(f'Error occurred while getting emby {TelegramId}: {e}')
                 return None
@@ -218,7 +235,11 @@ async def UpdateLimitDate(TelegramId, days=30):
                 if emby is None:
                     return False
                 else:
-                    emby.LimitDate = datetime.now().date() + timedelta(days=days)
+                    if emby.Ban is True:
+                        emby.Ban = False
+                        emby.LimitDate = datetime.now().date() + timedelta(days=days)
+                    else:
+                        emby.LimitDate = emby.LimitDate + timedelta(days=days)
                     await session.commit()
                     return True
             except Exception as e:
@@ -226,11 +247,11 @@ async def UpdateLimitDate(TelegramId, days=30):
                 await session.rollback()
                 return False
             
-async def CreateCode(CodeId, TimeStamp):
+async def CreateCode(CodeId, TimeStamp, Tag):
     async with AsyncSession(engine) as session:
         async with session.begin():
             try:
-                session.add(Code(CodeId=CodeId, TimeStamp=TimeStamp))
+                session.add(Code(CodeId=CodeId, TimeStamp=TimeStamp, Tag=Tag))
                 await session.commit()
                 return True
             except Exception as e:
@@ -241,7 +262,12 @@ async def GetCode(CodeId):
     async with AsyncSession(engine) as session:
         async with session.begin():
             try:
-                return await session.get(Code, CodeId)
+                code = await session.get(Code, CodeId)
+                if code is not None:
+                    session.expunge(code)
+                    return code
+                else:
+                    return None
             except Exception as e:
                 logging.error(f'Error occurred while getting code {CodeId}: {e}')
                 return None

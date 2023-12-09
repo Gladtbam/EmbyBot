@@ -2,10 +2,18 @@ from LoadConfig import init_config
 from Telegram import client
 import asyncio
 import threading
-import ScoreManager
 import DataBase
+import EmbyAccount
+import EmbyAPI
+import GenCode
+import Scheduler
+import ScoreManager
+import logging
+
 
 if __name__ == '__main__':
     config = init_config()
-    threading.Thread(target=DataBase.run_init_db).start()
+    loop = asyncio.get_event_loop()
+    tasks = [Scheduler.start_scheduler(), DataBase.init_db()]
+    loop.run_until_complete(asyncio.gather(*tasks))
     client.run_until_disconnected()
