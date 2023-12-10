@@ -92,7 +92,8 @@ async def server_status():
         if probe_info is not None and session_list is not None:
             message = f'''
 当前在线人数: {session_list}
-CPU负载: {probe_info['result'][0]['status']['Load5']}
+系统负载: {probe_info['result'][0]['status']['Load5']}
+CPU负载: {"{:.3f}%".format(probe_info['result'][0]['status']['CPU'])}
 内存使用率: {"{:.3f}%".format((probe_info['result'][0]['status']['MemUsed'] / probe_info['result'][0]['host']['MemTotal']) * 100)}
 实时下载: {"{:.2f} Mbps".format(probe_info['result'][0]['status']['NetInSpeed'] * 8 / 1_000_000)}
 实时上传: {"{:.2f} Mbps".format(probe_info['result'][0]['status']['NetOutSpeed'] * 8 / 1_000_000)}

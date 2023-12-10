@@ -1,5 +1,6 @@
 from LoadConfig import init_config
 from Telegram import client
+from arr import *
 import asyncio
 import threading
 import DataBase
