@@ -62,13 +62,14 @@ async def signup_method(event):
         # raise events.StopPropagation
     
 async def signup(event, TelegramId):
+    message = None
     try:
         user = await event.client.get_entity(TelegramId)
         TelegramName = user.username
         BlockMedia = ("Japan")
         
         if TelegramName is None:
-            await event.reply(f'注册失败, 请先设置 Telegram 用户名')
+            message = await event.reply(f'注册失败, 请先设置 Telegram 用户名')
             return False
         else:
             emby = await DataBase.GetEmby(TelegramId)
@@ -79,16 +80,16 @@ async def signup(event, TelegramId):
                     Pw = await EmbyAPI.Password(EmbyId)
                     _bool = await DataBase.CreateEmby(TelegramId, EmbyId, TelegramName)
                     if _bool:
-                        await event.reply(f'注册成功, \nEMBY ID: `{EmbyId}`\n用户名: `{TelegramName}`\n初始密码: `{Pw}`\n\n请及时修改密码')
+                        message = await event.reply(f'注册成功, \nEMBY ID: `{EmbyId}`\n用户名: `{TelegramName}`\n初始密码: `{Pw}`\n\n请及时修改密码')
                         return True
                     else:
-                        await event.reply(f'注册失败, ⚠️数据库错误，请联系管理员')
+                        message = await event.reply(f'注册失败, ⚠️数据库错误，请联系管理员')
                         return False
                 else:
-                    await event.reply(f'注册失败, 无法创建账户，请联系管理员')
+                    message = await event.reply(f'注册失败, 无法创建账户，请联系管理员')
                     return False
             else:
-                await event.reply(f'用户已存在')
+                message = await event.reply(f'用户已存在')
                 return False
     except Exception as e:
         logging.error(e)
@@ -96,28 +97,31 @@ async def signup(event, TelegramId):
     finally:
         await asyncio.sleep(10)
         await event.delete()
+        await message.delete() if message is not None else None
         # raise events.StopPropagation
     
 @client.on(events.NewMessage(pattern=fr'^/code({config.telegram.BotName})?\s+(.*)$'))
 async def codeCheck(event):
     _, *args = event.message.text.split(' ')
+    message = None
     try:
         if len(args) > 0:
             if event.is_private or event.sender_id in config.other.AdminId:
                 await code(event, args[0])
             else:
-                await event.reply(f'请私聊 {config.telegram.BotName} 机器人')
+                message = await event.reply(f'请私聊 {config.telegram.BotName} 机器人')
         else:
-            await event.reply(f'请回复 “码”')
+            message = await event.reply(f'请回复 “码”')
     except Exception as e:
         logging.error(e)
     finally:
         await asyncio.sleep(10)
         await event.delete()
-        # await event.message.delete()
+        await message.delete() if message is not None else None
         # raise events.StopPropagation
     
 async def code(event, code):
+    message = None
     try:
         plaintext = await GenCode.decrypt_code(code)
         if plaintext is not None:
@@ -133,25 +137,26 @@ async def code(event, code):
                         await DataBase.DeleteCode(code)
                         if emby.Ban is True:
                             await EmbyAPI.User_Policy(emby.EmbyId, BlockMeida=("Japan"))
-                        await event.reply(f'续期成功')
+                        message = await event.reply(f'续期成功')
                     else:
-                        await event.reply(f'离到期还有 {remain_day.days} 天\n目前小于 7 天才允许续期')
+                        message = await event.reply(f'离到期还有 {remain_day.days} 天\n目前小于 7 天才允许续期')
                 else:
-                    await event.reply(f'用户不存在, 请注册')
+                    message = await event.reply(f'用户不存在, 请注册')
             else:
-                await event.reply(f'不存在对应的：{plaintext}, 码无效, 请联系管理员')
+                message = await event.reply(f'不存在对应的：{plaintext}, 码无效, 请联系管理员')
         else:
-            await event.reply(f'码无效')
+            message = await event.reply(f'码无效')
     except Exception as e:
         logging.error(e)
     finally:
-        await asyncio.sleep(10)
+        await asyncio.sleep(30)
         await event.delete()
-        # await event.message.delete()
+        await message.delete() if message is not None else None
         # raise events.StopPropagation
     
 @client.on(events.NewMessage(pattern=fr'^/del({config.telegram.BotName})?$'))
 async def delete(event):
+    messages = None
     try:
         if event.sender_id in config.other.AdminId:
             if event.reply_to_msg_id is not None:
@@ -163,27 +168,29 @@ async def delete(event):
                         _bool_db = await DataBase.DeleteEmby(user_id)
                         _bool_emby = await EmbyAPI.DeleteEmbyUser(emby.EmbyId)
                         if _bool_db and _bool_emby:
-                            await event.reply(f'用户 {emby.EmbyId} 删除成功')
+                            messages = await event.reply(f'用户 {emby.EmbyId} 删除成功')
                         else:
-                            await event.reply(f'用户 {emby.EmbyId} 删除失败, 原因: db: {_bool_db}, emby: {_bool_emby}')
+                            messages = await event.reply(f'用户 {emby.EmbyId} 删除失败, 原因: db: {_bool_db}, emby: {_bool_emby}')
                     else:
-                        await event.reply(f'用户不存在')
+                        messages = await event.reply(f'用户不存在')
                 else:
-                    await event.reply(f'请回复一个用户')
+                    messages = await event.reply(f'请回复一个用户')
             else:
-                await event.reply(f'请回复一个用户')
+                messages = await event.reply(f'请回复一个用户')
         else:
-            await event.reply(f'非管理员, 权限不足')
+            messages = await event.reply(f'非管理员, 权限不足')
+            await DataBase.ChangeWarning(event.sender_id)
     except Exception as e:
         logging.error(e)
     finally:
         await asyncio.sleep(10)
         await event.delete()
-        # await event.message.delete()
-        # raise events.StopPropagation
+        await messages.delete() if messages is not None else None
+        raise events.StopPropagation
     
 @client.on(events.CallbackQuery(data='renew'))
 async def renew(event):
+    message = None
     try:
         emby = await DataBase.GetEmby(event.sender_id)
         if emby is not None:
@@ -201,44 +208,45 @@ async def renew(event):
                         await DataBase.ChangeScore(event.sender_id, -renew_value)
                         if emby.Ban is True:
                             await EmbyAPI.User_Policy(emby.EmbyId, BlockMeida=("Japan"))
-                        await event.respond(f'续期成功, 扣除积分: {renew_value}')
+                        message = await event.respond(f'续期成功, 扣除积分: {renew_value}')
                     else:
-                        await event.respond(f'续期失败, 积分不足, 当前积分: {user.Score if user is not None else 0}, 续期所需积分: {renew_value}')
+                        message = await event.respond(f'续期失败, 积分不足, 当前积分: {user.Score if user is not None else 0}, 续期所需积分: {renew_value}')
                 else:
-                    await event.respond(f'续期失败, 未查询到观看度, 请稍后重试')
+                    message = await event.respond(f'续期失败, 未查询到观看度, 请稍后重试')
             else:
-                await event.respond(f'离到期还有 {remain_day.days} 天\n目前小于 7 天才允许续期')
+                message = await event.respond(f'离到期还有 {remain_day.days} 天\n目前小于 7 天才允许续期')
         else:
-            await event.respond(f'用户不存在, 请注册')
+            message = await event.respond(f'用户不存在, 请注册')
     except Exception as e:
         logging.error(e)
     finally:
-        await asyncio.sleep(10)
+        await asyncio.sleep(20)
         await event.delete()
-        # await event.message.delete()
+        await message.delete() if message is not None else None
         # raise events.StopPropagation
     
 @client.on(events.CallbackQuery(data='nfsw'))
 async def nfsw(event):
+    message = None
     try:
         emby = await DataBase.GetEmby(event.sender_id)
         if emby is not None:
             emby_info = await EmbyAPI.GetUserInfo(emby.EmbyId)
             if len(emby_info['Policy']['BlockedMediaFolders']) > 0:
                 await EmbyAPI.User_Policy(emby.EmbyId, BlockMeida=())
-                await event.respond(f'NSFW On')
+                message = await event.respond(f'NSFW On')
             else:
                 await EmbyAPI.User_Policy(emby.EmbyId, BlockMeida=("Japan"))
-                await event.respond(f'NSFW Off')
+                message = await event.respond(f'NSFW Off')
         else:
-            await event.respond(f'用户不存在, 请注册')
+            message = await event.respond(f'用户不存在, 请注册')
     except Exception as e:
         logging.error(e)
     finally:
         await asyncio.sleep(10)
         await event.delete()
-        # await event.message.delete()
-        # raise events.StopPropagation
+        await message.delete() if message is not None else None
+        raise events.StopPropagation
     
 @client.on(events.CallbackQuery(data='forget_password'))
 async def forget_password(event):
@@ -258,13 +266,14 @@ async def forget_password(event):
     
 @client.on(events.CallbackQuery(data='query_renew'))
 async def query_renew(event):
+    message = None
     try:
         value = await DataBase.GetRenewValue()
-        await event.respond(f'当前续期积分: {value}')
+        message = await event.respond(f'当前续期积分: {value}')
     except Exception as e:
         logging.error(e)
     finally:
         await asyncio.sleep(10)
         await event.delete()
-        # await event.message.delete()
-        # raise events.StopPropagation
+        await message.delete() if message is not None else None
+        raise events.StopPropagation

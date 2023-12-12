@@ -69,14 +69,16 @@ async def settle_score():
         UserRatio, TotalScore = await calculate_ratio()
         userScore = await DataBase.SettleScore(UserRatio, TotalScore)
         if userScore is not None:
-            message = f'积分结算完成, 共结算 {TotalScore} 分\n\t结算后用户积分如下:\n{userScore}'
+            message = await client.send_message(config.telegram.ChatID, f'积分结算完成, 共结算 {TotalScore} 分\n\t结算后用户积分如下:\n', parse_mode='Markdown')
             for userId, userValue in userScore.items():
                 user = await client.get_entity(userId)
                 username = user.first_name + ' ' + user.last_name if user.last_name else None
-                message += f"[{username}](tg://user?id={userId}) 获得 {userValue} 分\n"
-            await client.send_message(config.telegram.ChatID, message, parse_mode='Markdown')
+                # message += f"[{username}](tg://user?id={userId}) 获得 {userValue} 分\n"
+                message = await client.edit_message(message, message.text + f"[{username}](tg://user?id={userId}) 获得 {userValue} 分\n", parse_mode='Markdown')
+            # await client.send_message(config.telegram.ChatID, message, parse_mode='Markdown')
             user_msg_count.clear()
         else:
+            await client.send_message(config.telegram.ChatID, "无可结算积分")
             logging.info("No users to settle")
     except Exception as e:
         logging.error(f"Error settling score: {e}")
@@ -85,6 +87,7 @@ async def settle_score():
 
 @scheduler.scheduled_job('cron', minute='0', second='10')
 async def server_status():
+    messages = None
     try:
         logging.info("Starting server status job")
         probe_info = await EmbyAPI.GetServerInfo()
@@ -100,13 +103,14 @@ CPU负载: {"{:.3f}%".format(probe_info['result'][0]['status']['CPU'])}
 
 **积分注册开启, 当前注册积分**: {int(await DataBase.GetRenewValue() * config.other.Ratio)}
 '''
-            await client.send_message(config.telegram.ChatID, message, parse_mode='Markdown')
+            messages = await client.send_message(config.telegram.ChatID, message, parse_mode='Markdown')
         else:
             logging.error("Error getting server status")
     except Exception as e:
         logging.error(f"Error getting server status: {e}")
     finally:
-        logging.info("Server status job finished")
+        await asyncio.sleep(3599)
+        await messages.delete() if messages is not None else None
 
 async def start_scheduler():
     try:

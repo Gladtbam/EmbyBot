@@ -52,14 +52,15 @@ async def create_code(event):
             Button.inline('生成注册码', data='signup_code'),
             Button.inline('生成续期码', data='renew_code'),
     ]
+    message = None
     try:
-        await event.respond('请选择生成的码类型\n使用前请先查看 WiKi, 否则造成的损失自付', buttons=keyboard)
+        message = await event.respond('请选择生成的码类型\n使用前请先查看 WiKi, 否则造成的损失自付', buttons=keyboard)
     except Exception as e:
         logging.error(e)
     finally:
         await asyncio.sleep(10)
         await event.delete()
-        # await event.message.delete()
+        await message.delete() if message is not None else None
         raise events.StopPropagation
 
 @client.on(events.CallbackQuery(pattern=r'.*_code$'))
@@ -83,4 +84,4 @@ async def right_code(event):
     finally:
         await asyncio.sleep(10)
         await event.delete()
-        # raise events.StopPropagation
+        raise events.StopPropagation

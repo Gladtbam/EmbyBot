@@ -1,4 +1,4 @@
-__all__ = ["radarr", "sonarr", "Searcharr"]
+__all__ = ["radarr", "sonarr", "Searcharr", "bazarr", "Subtitlesarr"]
 
-from . import radarr, sonarr, Searcharr
+from . import radarr, sonarr, Searcharr, bazarr, Subtitlesarr
 

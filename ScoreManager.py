@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from random import randint, choices, choice
 import logging
 import asyncio
+import re
 
 config = init_config()
 user_msg_count = {}
@@ -79,7 +80,7 @@ async def checkin(event):
                         if _bool:
                             await event.reply(f'无Emby账户, 等比转换积分, 获得 {value} 分')
                 elif roulette == 'double':
-                    value = renew_value * 2
+                    value = int(score) * 2
                     _bool = await DataBase.ChangeCheckin(event.sender_id, value)
                     if _bool:
                         await event.reply(f'签到成功, 积分翻倍, 获得 {value} 分')
@@ -101,7 +102,7 @@ async def new_message(event):
     global oldsum
     if isinstance(event.message, types.Message) and isinstance(event.message.from_id, types.PeerUser):
         user_id = event.message.from_id.user_id
-        if not event.message.text.startswith('/'):
+        if not event.message.text.startswith('/') and ['冒泡', '冒个泡', '好', '签到', '观看度'] not in event.message.text:
             if (user_id_old != user_id) and (user_id not in config.other.AdminId):
                 user_id_old = user_id
                 oldsum = 0
@@ -138,6 +139,7 @@ async def calculate_ratio():
 
 @client.on(events.NewMessage(pattern=fr'^/change({config.telegram.BotName})?\s+(.*)$'))
 async def change(evnet):
+    message = None
     try:
         if evnet.sender_id in config.other.AdminId:
             _, *args = evnet.message.text.split(' ')
@@ -146,20 +148,21 @@ async def change(evnet):
                 _bool = await DataBase.ChangeCheckin(reply.sender_id, int(args[0]))
                 if _bool:
                     user = await DataBase.GetUser(reply.sender_id)
-                    await evnet.reply(f'修改成功, 当前用户积分为 {user.Score}')
+                    message = await evnet.reply(f'修改成功, 当前用户积分为 {user.Score}')
                 else:
-                    await evnet.reply(f'修改失败')
+                    message = await evnet.reply(f'修改失败')
             else:
-                await evnet.reply(f'参数错误, 请检查参数')
+                message = await evnet.reply(f'参数错误, 请检查参数')
         else:
-            await evnet.reply(f'权限不足')
+            message = await evnet.reply(f'权限不足')
             await DataBase.ChangeWarning(evnet.sender_id)
     except Exception as e:
         logging.error(e)
     finally:
         await asyncio.sleep(10)
         await evnet.delete()
-        # raise events.StopPropagation
+        await message.delete() if message is not None else None
+        raise events.StopPropagation
     
 @client.on(events.NewMessage(pattern=fr'^/settle({config.telegram.BotName})?$'))
 async def settle(event):
@@ -168,15 +171,16 @@ async def settle(event):
             UserRatio, TotalScore = await calculate_ratio()
             userScore = await DataBase.SettleScore(UserRatio, TotalScore)
             if userScore is not None:
-                message = f'积分结算完成, 共结算 {TotalScore} 分\n\t结算后用户积分如下:\n'
+                message = await client.send_message(config.telegram.ChatID, f'积分结算完成, 共结算 {TotalScore} 分\n\t结算后用户积分如下:\n', parse_mode='Markdown')
                 for userId, userValue in userScore.items():
                     user = await client.get_entity(userId)
                     username = user.first_name + ' ' + user.last_name if user.last_name else None
-                    message += f"[{username}](tg://user?id={userId}) 获得 {userValue} 分\n"
-                await client.send_message(config.telegram.ChatID, message, parse_mode='Markdown')
+                    # message += f"[{username}](tg://user?id={userId}) 获得 {userValue} 分\n"
+                    message = await client.edit_message(message, message.text + f"[{username}](tg://user?id={userId}) 获得 {userValue} 分\n", parse_mode='Markdown')
+                # await client.send_message(config.telegram.ChatID, message, parse_mode='Markdown')
                 user_msg_count.clear()
             else:
-                await event.reply(f'结算失败')
+                await event.reply(f'结算失败, 无可结算积分')
         else:
             await event.reply(f'非管理员, 权限不足')
             await DataBase.ChangeWarning(event.sender_id)
@@ -186,3 +190,27 @@ async def settle(event):
         await asyncio.sleep(10)
         await event.delete()
         # raise events.StopPropagation
+        
+@client.on(events.NewMessage(pattern=fr'^/warn({config.telegram.BotName})?$'))
+async def change(evnet):
+    message = None
+    try:
+        if evnet.sender_id in config.other.AdminId:
+            reply = await evnet.get_reply_message()
+            _bool = await DataBase.ChangeWarning(reply.sender_id)
+            if _bool:
+                user = await client.get_entity(reply.sender_id)
+                username = user.first_name + ' ' + user.last_name if user.last_name else user.first_name
+                message = await evnet.reply(f'[{username}](tg://user?id={reply.sender_id}) 被警告')
+            else:
+                message = await evnet.reply(f'警告失败')
+        else:
+            message = await evnet.reply(f'权限不足')
+            await DataBase.ChangeWarning(evnet.sender_id)
+    except Exception as e:
+        logging.error(e)
+    finally:
+        await asyncio.sleep(10)
+        await evnet.delete()
+        await message.delete() if message is not None else None
+        raise events.StopPropagation

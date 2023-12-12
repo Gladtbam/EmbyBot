@@ -301,6 +301,7 @@ async def DeleteLimitCode():
                 return False
             
 async def SettleScore(UserRatio, TotalScore):
+    renewValue = int(await GetRenewValue())
     async with AsyncSession(engine) as session:
         async with session.begin():
             try:
@@ -313,7 +314,12 @@ async def SettleScore(UserRatio, TotalScore):
                     if user is None:
                         session.add(User(TelegramId=userId, Score=userValue))
                     else:
+                        # n = user.Score // renewValue
+                        # result_score = (userValue - n * renewValue) / (n + 1)
+                        # sigma_sum = sum(renewValue / i for i in range(1, n + 1))
+                        # userValue = result_score + sigma_sum
                         user.Score += userValue
+                        
                     userScore[userId] = userValue
                 await session.commit()
                 return userScore

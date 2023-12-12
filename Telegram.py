@@ -16,56 +16,63 @@ client = TelegramClient('session', config.telegram.ApiId, config.telegram.ApiHas
 
 @client.on(events.NewMessage(pattern=fr'^/start({config.telegram.BotName})?$'))
 async def start(event):
+    message = None
     try:
-        await event.respond(f'欢迎使用 {config.telegram.BotName} 机器人！')
+        message = await event.respond(f'欢迎使用 {config.telegram.BotName} 机器人！')
         await help(event)
     except Exception as e:
         logging.error(e)
     finally:
         await asyncio.sleep(10)
         await event.delete()
-        # await event.message.delete()
-        # raise events.StopPropagation
+        await message.delete() if message is not None else None
+        raise events.StopPropagation
 
 @client.on(events.NewMessage(pattern=fr'^/help({config.telegram.BotName})?$'))
 async def help(event):
+    message = None
     try:
         messages = f'''
 /help - [私聊]帮助
 /checkin - 签到
 /signup - 注册, 仅开放注册时使用
-/request - 求片, 具体使用查看WiKi
+/me - [私聊]查看 Emby 账户 和 个人 信息(包含其它工具)
 /code - [私聊]使用注册码注册, 或者使用续期码续期。例: /code 123
 /del - [管理员]删除 Emby 账户, 需回复一个用户
-/me - [私聊]查看 Emby 账户 和 个人 信息(包含其它工具)
+/warn - [管理员]警告用户, 需回复一个用户
 /info - [管理员]查看用户信息
 /settle - [管理员]手动结算积分
 /change - [管理员]手动修改积分, 正数加负数减
     '''
         if event.is_private:
-            await event.respond(messages)
+            message = await event.respond(messages)
         else:
-            await event.reply(messages)
+            message = await event.reply(f'请私聊 {config.telegram.BotName} 机器人使用')
     except Exception as e:
         logging.error(e)
     finally:
         await asyncio.sleep(10)
         await event.delete()
-        # await event.message.delete()
-        # raise events.StopPropagation
+        await message.delete() if message is not None else None
+        raise events.StopPropagation
 
 @client.on(events.NewMessage(pattern=fr'^/me({config.telegram.BotName})?$'))
 async def me(event, TelegramId = None):
+    messages = None
     keyboard = [
         [
             Button.inline('生成 “码”', data='code_create'),
             Button.inline('NSFW开关', data='nfsw'),
-            Button.inline('续期', data='renew')
+            Button.inline('忘记密码', data='forget_password')
         ],
         [
-            Button.inline('忘记密码', data='forget_password'),
+            Button.inline('续期', data='renew'),
             Button.inline('线路查询', data='line'),
             Button.inline('查询续期积分', data='query_renew')
+        ],
+        [
+            Button.inline('求片', data='request'),
+            Button.inline('上传字幕', data='subtitle'),
         ]
     ]
     if TelegramId is None:
@@ -106,40 +113,42 @@ async def me(event, TelegramId = None):
                 await event.respond(message, parse_mode='Markdown', buttons=keyboard)
             else:
                 await event.respond(message, parse_mode='Markdown')
-        elif TelegramId in config.other.AdminId:
-            await event.reply(message, parse_mode='Markdown')
+        elif event.sender_id in config.other.AdminId and TelegramId != event.sender_id:
+            messages = await event.reply(message, parse_mode='Markdown')
         else:
-            await event.reply(f'请私聊 {config.telegram.BotName} 机器人')
+            messages = await event.reply(f'请私聊 {config.telegram.BotName} 机器人')
     except Exception as e:
         logging.error(e)
     finally:
         await asyncio.sleep(10)
         await event.delete()
-        # await event.message.delete()
-        # raise events.StopPropagation
+        await messages.delete() if messages is not None else None
+        raise events.StopPropagation
             
 @client.on(events.NewMessage(pattern=fr'^/info({config.telegram.BotName})?$'))
 async def info(event):
+    message = None
     try:
         if event.sender_id in config.other.AdminId:
             if event.is_reply:
                 reply = await event.get_reply_message()
                 await me(event, reply.sender_id)
             else:
-                await event.reply(f'请回复一个用户')
+                message = await event.reply(f'请回复一个用户')
         else:
-            await event.reply(f'仅管理员可用')
+            message = await event.reply(f'仅管理员可用')
             await DataBase.ChangeWarning(event.sender_id)
     except Exception as e:
         logging.error(e)
     finally:
         await asyncio.sleep(10)
         await event.delete()
-        # await event.message.delete()
+        await message.delete() if message is not None else None
         # raise events.StopPropagation
     
 @client.on(events.CallbackQuery(data='line'))
 async def line(event):
+    message = None
     try:
         url = config.emby.Host.split(':')
         if len(url) == 2:
@@ -149,23 +158,24 @@ async def line(event):
                 url = config.emby.Host + ':80'
         else:
             url = config.emby.Host
-        await event.respond(f'Emby 地址: `{url}`')
+        message = await event.respond(f'Emby 地址: `{url}`')
     except Exception as e:
         logging.error(e)
     finally:
         await asyncio.sleep(10)
         await event.delete()
-        # await event.message.delete()
-        # raise events.StopPropagation
+        await message.delete() if message is not None else None
+        raise events.StopPropagation
     
 @client.on(events.ChatAction)
 async def chat_action(event):
+    message = None
     try:
         if event.user_joined or event.user_added:
-            await client.send_message(event.chat_id, f'欢迎 [{event.user.first_name}](tg://user?id={event.user.id}) 加入本群')
+            message = await client.send_message(event.chat_id, f'欢迎 [{event.user.first_name}](tg://user?id={event.user.id}) 加入本群\n 请查看[Wiki]({config.other.Wiki})了解本群规则和Bot使用方法)')
             await DataBase.CreateUsers(event.user.id)
         if event.user_left or event.user_kicked:
-            await client.send_message(event.chat_id, f'[{event.user.first_name}](tg://user?id={event.user.id}) 离开了本群')
+            message = await client.send_message(event.chat_id, f'[{event.user.first_name}](tg://user?id={event.user.id}) 离开了本群')
             await DataBase.DeleteUser(event.user.id)
             emby = await DataBase.GetEmby(event.user.id)
             if emby is not None:
@@ -183,5 +193,5 @@ async def chat_action(event):
     finally:
         await asyncio.sleep(10)
         await event.delete()
-        # await event.message.delete()
+        await message.delete() if message is not None else None
         # raise events.StopPropagation

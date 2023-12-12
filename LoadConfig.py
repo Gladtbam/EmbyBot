@@ -59,6 +59,18 @@ class Sonarr:
 class SonarrAnime:
     Host: Optional[str] = None
     ApiKey: Optional[str] = None
+    
+@dataclass_json
+@dataclass
+class Bazarr:
+    Host: Optional[str] = None
+    ApiKey: Optional[str] = None
+
+@dataclass_json
+@dataclass
+class BazarrAnime:
+    Host: Optional[str] = None
+    ApiKey: Optional[str] = None
 
 @dataclass_json
 @dataclass
@@ -66,6 +78,7 @@ class Other:
     AdminId: Optional[list] = None
     OMDBApiKey: Optional[str] = None
     Ratio: int = 1
+    Wiki: Optional[str] = None
 
 @dataclass_json
 @dataclass
@@ -78,6 +91,8 @@ class Config:
     radarr: Radarr = field(default_factory=Radarr)
     sonarr: Sonarr = field(default_factory=Sonarr)
     sonarrAnime: SonarrAnime = field(default_factory=SonarrAnime)
+    bazarr: Bazarr = field(default_factory=Bazarr)
+    bazarrAnime: BazarrAnime = field(default_factory=BazarrAnime)
     other: Other = field(default_factory=Other)
 
 def load_config():

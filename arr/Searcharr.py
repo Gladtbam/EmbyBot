@@ -11,68 +11,91 @@ import traceback
 import io
 
 config = init_config()
-last_runtime = None
+next_runtime = None
 metadataInfo = {'type': None, 'info': None}
 
-@client.on(events.NewMessage(pattern=fr'^/request(?:{config.telegram.BotName})?(\s.*)?$'))
+@client.on(events.CallbackQuery(data=r'request'))
 async def search(event):
-    global last_runtime, metadataInfo
-    _, *args = event.text.split(' ')
-    if last_runtime is None or (datetime.now() - last_runtime >= timedelta(minutes=5)):
-        try:
-            if args[0] == 'tv':
-                seriesInfo = await sonarr.GetSeriesInfo(args[1])
-                if seriesInfo is None or not seriesInfo:
-                    seriesInfo = await sonarr.seriesLookup(args[1])
-                    if seriesInfo is None or not seriesInfo:
-                        await event.reply(f"未找到该剧集, 请检查 tvdbId 是否正确")
-                    else:
-                        print(seriesInfo)
-                        await SendInfo(event, seriesInfo[0], _class='tv')
-                        metadataInfo = {'type': 'tv', 'info': seriesInfo[0]}
-                else:
-                    await event.reply(f"已在队列中, 请勿重复添加")
-            elif args[0] == 'anime':
-                animeInfo = await sonarr.GetAnimeInfo(args[1])
-                if animeInfo is None or not animeInfo:
-                    animeInfo = await sonarr.animeLookup(args[1])
-                    if animeInfo is None or not animeInfo:
-                        await event.reply(f"未找到该动画, 请检查 tvdbId 是否正确")
-                    else:
-                        await SendInfo(event, animeInfo[0], _class='anime')
-                        metadataInfo = {'type': 'anime', 'info': animeInfo[0]}
-                else:
-                    await event.reply(f"已在队列中, 请勿重复添加")
-            elif args[0] == 'movie':
-                movieInfo = await radarr.GetMovieInfo(args[1])
-                if movieInfo is None or not movieInfo:
-                    movieInfo = await radarr.movieLookup(args[1])
-                    if movieInfo is None or not movieInfo:
-                        await event.reply(f"未找到该电影, 请检查 tmdbId 是否正确")
-                    else:
-                        print(movieInfo)
-                        await SendInfo(event, movieInfo, _class='movie')
-                        metadataInfo = {'type': 'movie', 'info': movieInfo}
-                else:
-                    await event.reply(f"已在队列中, 请勿重复添加")
-            else:
-                await event.reply(f"未知参数: {args[0]}, 请检查参数是否正确")
-            last_runtime = datetime.now()
-        except Exception as e:
-            logging.error(f"Error adding movie: {e}")
-            logging.error(traceback.format_exc())
-            await event.reply(f"查询错误: {e}")
-    else:
-        delta = timedelta(minutes=5) - (datetime.now() - last_runtime)
+    keyboard = [
+            Button.inline('电影', data='movie_search'),
+            Button.inline('剧集', data='tv_search'),
+            Button.inline('动画', data='anime_search'),
+    ]
+    message = None
+    try:
+        message = await event.respond('请选择搜索的类型', buttons=keyboard)
+    except Exception as e:
+        logging.error(e)
+    finally:
+        await asyncio.sleep(10)
+        await event.delete()
+        await message.delete() if message is not None else None
+        raise events.StopPropagation
+    
+@client.on(events.CallbackQuery(pattern=r'.*_search$'))
+async def reuqest_search(event):
+    global metadataInfo, next_runtime
+    if next_runtime is not None and datetime.now() < next_runtime:
+        delta = next_runtime - datetime.now()
         minutes, seconds = divmod(delta.total_seconds(), 60)
-        await event.reply(f"上次执行时间: {last_runtime.strftime('%Y-%m-%d %H:%M:%S')}, 请 {int(minutes)} 分 {int(seconds)} 秒后再试")
-
+        await event.answer(f"请 {int(minutes)} 分 {int(seconds)} 秒后再试")
+        return
+    metadataInfo_old = metadataInfo
+    s = event.data.decode().split('_')[0]
+    async with client.conversation(event.chat_id, timeout=60) as conv:
+            await conv.send_message('请输入' + (" tvdbId" if {s == "anime" or "tv"} else "电影的 tmdbId"))
+            try:
+                reply_message = await conv.get_response()
+                if reply_message.text.isdigit():
+                    if s == 'tv':
+                        seriesInfo = await sonarr.GetSeriesInfo(reply_message.text)
+                        if seriesInfo is None or not seriesInfo:
+                            seriesInfo = await sonarr.seriesLookup(reply_message.text)
+                            if seriesInfo is None or not seriesInfo:
+                                await event.reply(f"未找到该剧集, 请检查 tvdbId 是否正确")
+                            else:
+                                await SendInfo(event, seriesInfo[0], _class='tv')
+                                metadataInfo = {'type': 'tv', 'info': seriesInfo[0]}
+                        else:
+                            await event.reply(f"已在队列中, 请勿重复添加")
+                    elif s == 'anime':
+                        animeInfo = await sonarr.GetAnimeInfo(reply_message.text)
+                        if animeInfo is None or not animeInfo:
+                            animeInfo = await sonarr.animeLookup(reply_message.text)
+                            if animeInfo is None or not animeInfo:
+                                await event.reply(f"未找到该动画, 请检查 tvdbId 是否正确")
+                            else:
+                                await SendInfo(event, animeInfo[0], _class='anime')
+                                metadataInfo = {'type': 'anime', 'info': animeInfo[0]}
+                        else:
+                            await event.reply(f"已在队列中, 请勿重复添加")
+                    elif s == 'movie':
+                        movieInfo = await radarr.GetMovieInfo(reply_message.text)
+                        if movieInfo is None or not movieInfo:
+                            movieInfo = await radarr.movieLookup(reply_message.text)
+                            if movieInfo is None or not movieInfo:
+                                await event.reply(f"未找到该电影, 请检查 tmdbId 是否正确")
+                            else:
+                                await SendInfo(event, movieInfo, _class='movie')
+                                metadataInfo = {'type': 'movie', 'info': movieInfo}
+                        else:
+                            await event.reply(f"已在队列中, 请勿重复添加")
+                else:
+                    await conv.send_message('格式错误, 请重新输入')
+            except asyncio.TimeoutError:
+                await conv.send_message('超时取消')
+            except Exception as e:
+                logging.error(traceback.format_exc())
+                await conv.send_message('处理文件时发生错误')
+            finally:
+                if metadataInfo_old != metadataInfo:
+                    next_runtime = datetime.now() + timedelta(minutes=5)
+    
 async def GetCountry(imdbId):
     try:
         timeout = aiohttp.ClientTimeout(total=60)
         async with aiohttp.ClientSession(timeout=timeout, headers={'Accept': '*/*'}) as session:
             async with session.get(f"https://www.omdbapi.com/?i={imdbId}&plot=full&apikey={config.other.OMDBApiKey}") as resp:
-                print(resp.status)
                 if resp.status == 200:
                     country =  (await resp.json()).get('Country', '').split(', ')[0]
                     image = (await resp.json()).get('Poster', '')
@@ -95,9 +118,7 @@ async def GetCountry(imdbId):
     
 async def SendInfo(event, info, _class):
     try:
-        print(info, _class)
         country, category, image = await GetCountry(info['imdbId'])
-        print(country, category)
 
         message = f'''
 <h1><b>{info['title']}</b> ({info['year']})<h1>\n\n
@@ -153,7 +174,6 @@ async def SendInfo(event, info, _class):
         #         else:
         #             image = 'https://artworks.thetvdb.com/banners/images/missing/movie.jpg'
 
-        print(image)
         if _class == 'movie':
             await client.send_message(event.chat_id, message, buttons=buttons_movie, parse_mode='html', file=image)
         elif _class == 'tv':
