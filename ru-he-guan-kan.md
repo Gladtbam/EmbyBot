@@ -6,7 +6,7 @@ description: How to Watch
 
 ## 浏览器登录
 
-前往 [https://emby.ednovas.org](https://emby.ednovas.org) （首次打开需要稍微加载一会）
+前往 Bot 使用 /me 指令 线路查询，复制网址粘贴到浏览器地址栏 （首次打开需要稍微加载一会）
 
 输入您注册的用户名和密码登录，选择影片，观看。
 
@@ -30,11 +30,12 @@ Windows下载地址： [https://embydata.com/downloads/theater/release15/setup.e
 
 ### 配置服务器
 
-1. Emby软件都会要求提供Emby的地址以供链接
-2. 域名/Host 填入 `https://emby.ednovas.org`&#x20;
-3. 端口/port填入 `443`
-4. 用户名填入您设置的用户名，密码填入您设置的密码
-5. 点击登录
+ Emby软件都会要求提供Emby的地址以供链接
+> 前往 Bot 使用 /me 指令 线路查询
+>> 域名/Host 填入 线路查询的网址;
+>>> 端口/port填入 `443`
+>>>> 用户名填入您设置的用户名，密码填入您设置的密码
+>>>>> 点击登录
 
 ## Emby破解版客户端
 
