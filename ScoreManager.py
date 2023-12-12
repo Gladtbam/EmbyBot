@@ -102,7 +102,7 @@ async def new_message(event):
     global oldsum
     if isinstance(event.message, types.Message) and isinstance(event.message.from_id, types.PeerUser):
         user_id = event.message.from_id.user_id
-        if not event.message.text.startswith('/') and ['冒泡', '冒个泡', '好', '签到', '观看度'] not in event.message.text:
+        if not event.message.text.startswith('/') and not any(word in event.message.text for word in ['冒泡', '冒个泡', '好', '签到', '观看度']):
             if (user_id_old != user_id) and (user_id not in config.other.AdminId):
                 user_id_old = user_id
                 oldsum = 0
