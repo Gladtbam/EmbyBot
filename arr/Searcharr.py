@@ -31,7 +31,7 @@ async def search(event):
         await event.delete()
         await message.delete() if message is not None else None
         raise events.StopPropagation
-    
+
 @client.on(events.CallbackQuery(pattern=r'.*_search$'))
 async def reuqest_search(event):
     global metadataInfo, next_runtime
@@ -90,7 +90,7 @@ async def reuqest_search(event):
             finally:
                 if metadataInfo_old != metadataInfo:
                     next_runtime = datetime.now() + timedelta(minutes=5)
-    
+
 async def GetCountry(imdbId):
     try:
         timeout = aiohttp.ClientTimeout(total=60)
@@ -115,7 +115,7 @@ async def GetCountry(imdbId):
         logging.error(f"Error looking up movie: {e}")
         logging.error(traceback.format_exc())
         return None, None, None
-    
+
 async def SendInfo(event, info, _class):
     try:
         country, category, image = await GetCountry(info['imdbId'])
@@ -130,7 +130,7 @@ async def SendInfo(event, info, _class):
 <b>时长:</b> {info['runtime']}\n
 <h2><a href="https://www.imdb.com/title/{info['imdbId']}">IMDB</a>\t<a href="{f"https://www.themoviedb.org/movie/{info['tmdbId']}" if _class == 'movie' else f"http://www.thetvdb.com/?tab=series&id={info['tvdbId']}"}">{"TMDB" if _class == 'movie' else "TVDB"}</a></h2>\n
 '''
-        
+
         buttons_movie = [
             [
                 Button.inline('国产(含港澳台)', b"movie_zh"),
@@ -166,7 +166,7 @@ async def SendInfo(event, info, _class):
         #         image = i['remoteUrl'] if 'remoteUrl' in i else i['url']
         #     elif i['coverType'] == 'fanart':
         #         image = i['remoteUrl'] if 'remoteUrl' in i else i['url']
-        
+
         # async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
         #     async with session.get(image) as resp:
         #         if resp.status == 200:
@@ -224,11 +224,11 @@ async def add_search(event):
             info = None
 
         if info is not None:
-            await event.answer(f"添加成功")
+            await event.reply(f"添加成功")
             await SendInfo(event, info, _class='addtrue')
         else:
-            await event.answer(f"添加失败")
+            await event.reply(f"添加失败")
     except Exception as e:
         logging.error(f"Error adding movie: {e}")
         logging.error(traceback.format_exc())
-        await event.answer(f"添加失败: {e}")
+        await event.reply(f"添加失败: {e}")

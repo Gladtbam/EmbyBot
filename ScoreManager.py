@@ -1,6 +1,6 @@
 from Telegram import client
 from LoadConfig import init_config
-from telethon import events, types
+from telethon import events, types, errors
 import DataBase
 import EmbyAPI
 from GenCode import generate_code
@@ -90,12 +90,15 @@ async def checkin(event):
             await event.reply(f'签到失败, 今日已签到, 禁止重复签到')
     except Exception as e:
         logging.error(e)
-                
+
     finally:
         await asyncio.sleep(10)
-        await event.delete()
+        try:
+            await event.delete()
+        except errors.rpcerrorlist.MessageDeleteForbiddenError:
+            logging.warning('MessageDeleteForbiddenError')
         # raise events.StopPropagation
-                
+
 @client.on(events.NewMessage(chats=config.telegram.ChatID))
 async def new_message(event):
     global user_id_old
@@ -120,13 +123,13 @@ async def new_message(event):
                     await event.reply(f"用户 [{username}](tg://user?id={user_id}) 发送消息过于频繁, 警告一次")
                 else:
                     await client.send_message(config.telegram.ChatID, f"用户 [{username}](tg://user?id={user_id}) 发送消息过于频繁, 警告失败, 管理员手动处理")
-                    
+
 async def calculate_ratio():
     TotalScore = 0
     UserRatio = {}
     for user_id, score in user_msg_count.items():
         TotalScore += score
-        
+
     for user_id, score in user_msg_count.items():
         n = score // 100
         result_score = (score - n * 100) / (n + 1)
@@ -134,7 +137,7 @@ async def calculate_ratio():
         result_score += sigma_sum
         ratio = result_score / TotalScore
         UserRatio[user_id] = ratio
-        
+
     return UserRatio, TotalScore
 
 @client.on(events.NewMessage(pattern=fr'^/change({config.telegram.BotName})?\s+(.*)$'))
@@ -163,7 +166,7 @@ async def change(evnet):
         await evnet.delete()
         await message.delete() if message is not None else None
         raise events.StopPropagation
-    
+
 @client.on(events.NewMessage(pattern=fr'^/settle({config.telegram.BotName})?$'))
 async def settle(event):
     try:
@@ -171,12 +174,12 @@ async def settle(event):
             UserRatio, TotalScore = await calculate_ratio()
             userScore = await DataBase.SettleScore(UserRatio, TotalScore)
             if userScore is not None:
-                message = await client.send_message(config.telegram.ChatID, f'积分结算完成, 共结算 {TotalScore} 分\n\t结算后用户积分如下:\n', parse_mode='Markdown')
+                message = await client.send_message(config.telegram.ChatID, f'积分结算完成, 共结算 {TotalScore} 分\n\t结算后用户积分如下:\n')
                 for userId, userValue in userScore.items():
                     user = await client.get_entity(userId)
-                    username = user.first_name + ' ' + user.last_name if user.last_name else None
+                    username = user.first_name + ' ' + user.last_name if user.last_name else user.first_name
                     # message += f"[{username}](tg://user?id={userId}) 获得 {userValue} 分\n"
-                    message = await client.edit_message(message, message.text + f"[{username}](tg://user?id={userId}) 获得 {userValue} 分\n", parse_mode='Markdown')
+                    message = await client.edit_message(message, message.text + f"[{username}](tg://user?id={userId}) 获得: {userValue} 积分\n")
                 # await client.send_message(config.telegram.ChatID, message, parse_mode='Markdown')
                 user_msg_count.clear()
             else:
@@ -190,7 +193,7 @@ async def settle(event):
         await asyncio.sleep(10)
         await event.delete()
         # raise events.StopPropagation
-        
+
 @client.on(events.NewMessage(pattern=fr'^/warn({config.telegram.BotName})?$'))
 async def change(evnet):
     message = None

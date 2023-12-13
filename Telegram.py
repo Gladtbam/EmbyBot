@@ -92,7 +92,7 @@ async def me(event, TelegramId = None):
 **Telegram ID**: `{TelegramId}`
 **尚未建立积分账户**
 '''
-            
+
         if emby is not None:
             played_ratio = await EmbyAPI.UserPlaylist(emby.EmbyId, emby.LimitDate.strftime("%Y-%m-%d"))
             if played_ratio is not None:
@@ -107,7 +107,7 @@ async def me(event, TelegramId = None):
                 message += f'**删除期**: `{emby.deleteDate}`'
             else:
                 message += f'**有效期**: `{emby.LimitDate}`'
-        
+
         if event.is_private:
             if emby is not None:
                 await event.respond(message, parse_mode='Markdown', buttons=keyboard)
@@ -124,7 +124,7 @@ async def me(event, TelegramId = None):
         await event.delete()
         await messages.delete() if messages is not None else None
         raise events.StopPropagation
-            
+
 @client.on(events.NewMessage(pattern=fr'^/info({config.telegram.BotName})?$'))
 async def info(event):
     message = None
@@ -145,7 +145,7 @@ async def info(event):
         await event.delete()
         await message.delete() if message is not None else None
         # raise events.StopPropagation
-    
+
 @client.on(events.CallbackQuery(data='line'))
 async def line(event):
     message = None
@@ -166,7 +166,7 @@ async def line(event):
         await event.delete()
         await message.delete() if message is not None else None
         raise events.StopPropagation
-    
+
 @client.on(events.ChatAction)
 async def chat_action(event):
     message = None

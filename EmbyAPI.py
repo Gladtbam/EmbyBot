@@ -25,7 +25,7 @@ async def NewUser(TelegramName):
     except Exception as e:
         logging.error(e)
         return None
-    
+
 async def User_Policy(EmbyId, BlockMeida):
     data = {
         "IsAdministrator": False,                   # 是否为管理员
@@ -81,7 +81,7 @@ async def User_Policy(EmbyId, BlockMeida):
     except Exception as e:
         logging.error(e)
         return False
-    
+
 async def GetUserInfo(EmbyId):
     url = f"{config.emby.Host}/emby/Users/{EmbyId}?api_key={config.emby.ApiKey}"
     try:
@@ -95,7 +95,7 @@ async def GetUserInfo(EmbyId):
     except Exception as e:
         logging.error(e)
         return None
-    
+
 async def Password(EmbyId, ResetPassword=False):
     Pw = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(12))
     data = {
@@ -124,7 +124,7 @@ async def Password(EmbyId, ResetPassword=False):
     except Exception as e:
         logging.error(e)
         return None
-    
+
 async def DeleteEmbyUser(EmbyId):
     url = f"{config.emby.Host}/emby/Users/{EmbyId}?api_key={config.emby.ApiKey}"
     try:
@@ -150,7 +150,7 @@ async def BanEmbyUser(EmbyIds):
     except Exception as e:
         logging.error(e)
         return False
-    
+
 async def DeleteBanUser(EmbyIds):
     try:
         async with aiohttp.ClientSession() as session:
@@ -163,7 +163,7 @@ async def DeleteBanUser(EmbyIds):
     except Exception as e:
         logging.error(e)
         return False
-    
+
 async def UserPlaylist(EmbyId, LimitDate):
     url = f"{config.emby.Host}/emby/user_usage_stats/UserPlaylist?user_id={EmbyId}&aggregate_data=false&days=30&end_date={LimitDate}&api_key={config.emby.ApiKey}"
     total_duration = 0
@@ -175,13 +175,13 @@ async def UserPlaylist(EmbyId, LimitDate):
                     for item in data:
                         total_duration += int(item['duration'])
                     total_ratio = total_duration / 86400
-                    return total_duration
+                    return total_ratio
                 else:
                     return None
     except Exception as e:
         logging.error(e)
         return None
-    
+
 async def SessionList():
     url = f"{config.emby.Host}/emby/user_usage_stats/session_list?api_key={config.emby.ApiKey}"
     try:
