@@ -131,11 +131,12 @@ async def calculate_ratio():
         TotalScore += score
 
     for user_id, score in user_msg_count.items():
-        n = score // 100
-        result_score = (score - n * 100) / (n + 1)
-        sigma_sum = sum(100 / i for i in range(1, n + 1))
-        result_score += sigma_sum
-        ratio = result_score / TotalScore
+        for _ in range(2):
+            n = score // 100
+            result_score = (score - n * 100) / (n + 1)
+            sigma_sum = sum(100 / i for i in range(1, n + 1))
+            score = int(sigma_sum + result_score)
+        ratio = score / TotalScore
         UserRatio[user_id] = ratio
 
     return UserRatio, TotalScore

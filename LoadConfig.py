@@ -59,7 +59,7 @@ class Sonarr:
 class SonarrAnime:
     Host: Optional[str] = None
     ApiKey: Optional[str] = None
-    
+
 @dataclass_json
 @dataclass
 class Bazarr:
@@ -131,8 +131,11 @@ def init_config():
             lidarr=get_user_input(Lidarr),
             radarr=get_user_input(Radarr),
             sonarr=get_user_input(Sonarr),
-            sonarrAnime=get_user_input(SonarrAnime)
+            sonarrAnime=get_user_input(SonarrAnime),
+            bazarr=get_user_input(Bazarr),
+            bazarrAnime=get_user_input(BazarrAnime)
         )
         save_config(config)
     else:
         return config
+
