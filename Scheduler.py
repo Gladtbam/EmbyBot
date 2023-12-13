@@ -69,12 +69,12 @@ async def settle_score():
         UserRatio, TotalScore = await calculate_ratio()
         userScore = await DataBase.SettleScore(UserRatio, TotalScore)
         if userScore is not None:
-            message = await client.send_message(config.telegram.ChatID, f'积分结算完成, 共结算 {TotalScore} 分\n\t结算后用户积分如下:\n')
+            message = await client.send_message(config.telegram.ChatID, f"积分结算完成, 共结算 {TotalScore} 分\n\t结算后用户积分如下:\n")
             for userId, userValue in userScore.items():
                 user = await client.get_entity(userId)
                 username = user.first_name + ' ' + user.last_name if user.last_name else user.first_name
                 # message += f"[{username}](tg://user?id={userId}) 获得 {userValue} 分\n"
-                message = await client.edit_message(message, message.text + f"[{username}](tg://user?id={userId}) 获得: {userValue} 积分\n")
+                message = await client.edit_message(message, message.text + f"\n[{username}](tg://user?id={userId}) 获得: {userValue} 积分")
             # await client.send_message(config.telegram.ChatID, message, parse_mode='Markdown')
             user_msg_count.clear()
         else:
