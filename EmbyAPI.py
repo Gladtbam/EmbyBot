@@ -110,11 +110,9 @@ async def Password(EmbyId, ResetPassword=False):
             if ResetPassword is True:
                 async with session.post(url, json={"ResetPassword": ResetPassword}, headers=headers) as resp:
                     if resp.status in [200, 204]:
-                        async with session.post(url, json=data, headers=headers) as resp:
-                            if resp.status in [200, 204]:
-                                return Pw
-                            else:
-                                return None
+                        return True
+                    else:
+                        return False
             else:
                 async with session.post(url, json=data, headers=headers) as resp:
                     if resp.status in [200, 204]:

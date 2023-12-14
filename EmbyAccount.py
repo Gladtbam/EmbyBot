@@ -60,14 +60,14 @@ async def signup_method(event):
         if (signup_info['remain_num'] == 0 or signup_info['time'] < current_time) and signup_message is not None:
             await signup_message.delete()
         # raise events.StopPropagation
-    
+
 async def signup(event, TelegramId):
     message = None
     try:
         user = await event.client.get_entity(TelegramId)
         TelegramName = user.username
         BlockMedia = ("Japan")
-        
+
         if TelegramName is None:
             message = await event.reply(f'注册失败, 请先设置 Telegram 用户名')
             return False
@@ -99,7 +99,7 @@ async def signup(event, TelegramId):
         await event.delete()
         await message.delete() if message is not None else None
         # raise events.StopPropagation
-    
+
 @client.on(events.NewMessage(pattern=fr'^/code({config.telegram.BotName})?\s+(.*)$'))
 async def codeCheck(event):
     _, *args = event.message.text.split(' ')
@@ -119,7 +119,7 @@ async def codeCheck(event):
         await event.delete()
         await message.delete() if message is not None else None
         # raise events.StopPropagation
-    
+
 async def code(event, code):
     message = None
     try:
@@ -153,7 +153,7 @@ async def code(event, code):
         await event.delete()
         await message.delete() if message is not None else None
         # raise events.StopPropagation
-    
+
 @client.on(events.NewMessage(pattern=fr'^/del({config.telegram.BotName})?$'))
 async def delete(event):
     messages = None
@@ -187,7 +187,7 @@ async def delete(event):
         await event.delete()
         await messages.delete() if messages is not None else None
         raise events.StopPropagation
-    
+
 @client.on(events.CallbackQuery(data='renew'))
 async def renew(event):
     message = None
@@ -224,7 +224,7 @@ async def renew(event):
         await event.delete()
         await message.delete() if message is not None else None
         # raise events.StopPropagation
-    
+
 @client.on(events.CallbackQuery(data='nfsw'))
 async def nfsw(event):
     message = None
@@ -247,23 +247,28 @@ async def nfsw(event):
         await event.delete()
         await message.delete() if message is not None else None
         raise events.StopPropagation
-    
+
 @client.on(events.CallbackQuery(data='forget_password'))
 async def forget_password(event):
+    message = None
     try:
         emby = await DataBase.GetEmby(event.sender_id)
         if emby is not None:
-            Pw = await EmbyAPI.Password(emby.EmbyId, ResetPassword=True)
-            await event.respond(f'密码已重置:\n `{Pw}`\n请及时修改密码')
+            _bool = await EmbyAPI.Password(emby.EmbyId, ResetPassword=True)
+            if _bool:
+                Pw = await EmbyAPI.Password(emby.EmbyId)
+                await event.respond(f'密码已重置:\n `{Pw}`\n请及时修改密码')
+            else:
+                message = await event.respond(f'密码重置失败')
         else:
-            await event.respond(f'用户不存在, 请注册')
+            message = await event.respond(f'用户不存在, 请注册')
     except Exception as e:
         logging.error(e)
     finally:
         await asyncio.sleep(60)
         await event.delete()
-        # raise events.StopPropagation
-    
+        await message.delete() if message is not None else None
+
 @client.on(events.CallbackQuery(data='query_renew'))
 async def query_renew(event):
     message = None
