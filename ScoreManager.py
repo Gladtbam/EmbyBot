@@ -80,7 +80,7 @@ async def checkin(event):
                         if _bool:
                             await event.reply(f'无Emby账户, 等比转换积分, 获得 {value} 分')
                 elif roulette == 'double':
-                    value = int(score) * 2
+                    value = abs(int(score)) * 2
                     _bool = await DataBase.ChangeCheckin(event.sender_id, value)
                     if _bool:
                         await event.reply(f'签到成功, 积分翻倍, 获得 {value} 分')
@@ -105,24 +105,25 @@ async def new_message(event):
     global oldsum
     if isinstance(event.message, types.Message) and isinstance(event.message.from_id, types.PeerUser):
         user_id = event.message.from_id.user_id
-        if not event.message.text.startswith('/') and not any(word in event.message.text for word in ['冒泡', '冒个泡', '好', '签到', '观看度']):
-            if (user_id_old != user_id) and (user_id not in config.other.AdminId):
-                user_id_old = user_id
-                oldsum = 0
-                if user_id in user_msg_count:
-                    user_msg_count[user_id] += 1
+        if user_id not in config.other.AdminId:
+            if not event.message.text.startswith('/') and not any(word in event.message.text for word in ['冒泡', '冒个泡', '好', '签到', '观看度']):
+                if (user_id_old != user_id):
+                    user_id_old = user_id
+                    oldsum = 0
+                    if user_id in user_msg_count:
+                        user_msg_count[user_id] += 1
+                    else:
+                        user_msg_count[user_id] = 1
                 else:
-                    user_msg_count[user_id] = 1
-            else:
-                oldsum += 1
-            if oldsum >= 5:
-                user = await event.client.get_entity(user_id)
-                username = user.first_name + ' ' + user.last_name if user.last_name else user.first_name
-                _bool = await DataBase.ChangeWarning(user_id)
-                if _bool:
-                    await event.reply(f"用户 [{username}](tg://user?id={user_id}) 发送消息过于频繁, 警告一次")
-                else:
-                    await client.send_message(config.telegram.ChatID, f"用户 [{username}](tg://user?id={user_id}) 发送消息过于频繁, 警告失败, 管理员手动处理")
+                    oldsum += 1
+                if oldsum >= 5:
+                    user = await event.client.get_entity(user_id)
+                    username = user.first_name + ' ' + user.last_name if user.last_name else user.first_name
+                    _bool = await DataBase.ChangeWarning(user_id)
+                    if _bool:
+                        await event.reply(f"用户 [{username}](tg://user?id={user_id}) 发送消息过于频繁, 警告一次")
+                    else:
+                        await client.send_message(config.telegram.ChatID, f"用户 [{username}](tg://user?id={user_id}) 发送消息过于频繁, 警告失败, 管理员手动处理")
 
 async def calculate_ratio():
     TotalScore = 0
