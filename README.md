@@ -52,9 +52,9 @@ After=network-online.target
 
 [Service]
 Type=simple
-WorkingDirectory=/opt/EmbyHubBot/
-Environment="PATH=/opt/EmbyHubBot/.venv/bin"
-ExecStart=/opt/EmbyHubBot/.venv/bin/python3 /opt/EmbyHubBot/main.py
+WorkingDirectory=/opt/EmbyBot/
+Environment="PATH=/opt/EmbyBot/.venv/bin"
+ExecStart=/opt/EmbyBot/.venv/bin/python3 /opt/EmbyBot/main.py
 Restart=always
 RestartSec=10
 
@@ -93,7 +93,7 @@ WantedBy=default.target
     </tr>
     <tr>
         <td>ApiId</td>
-        <td rowspan="2">API_ID和API_HASH，从https://my.telegram.org/apps获取</td>
+        <td rowspan="2">API_ID和API_HASH，从https://my.telegram.org/apps 获取</td>
     </tr>
     <tr>
         <td>ApiHash</td>
@@ -213,7 +213,7 @@ other:
 
 # 选择启用功能
 
-该库并没有写功能选择的功能，但可以通过 `注释装饰器` 来做的功能被调用：  
+该库并没有写功能选择的功能，但可以通过 `注释装饰器` 关闭不需要的功能：  
 
 ```python
 示例：
