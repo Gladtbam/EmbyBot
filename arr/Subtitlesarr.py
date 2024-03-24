@@ -50,6 +50,7 @@ async def subtitle(event):
                             zip_ref.extractall(path='/tmp')
                         os.remove(file_path)
                         await analyse_subtitle(_calss, dbId, subtitle_names, event)
+                        shutil.rmtree('/tmp' + dbId)
                     else:
                         await conv.send_message('请发送一个 zip 文件')
                 else:
@@ -127,12 +128,6 @@ async def analyse_subtitle(_calss, dbId, subtitle_names, event):
         logging.error(traceback.format_exc())
         await event.respond('处理字幕文件时发生错误, 请检查文件名是否正确')
     finally:
-        try:
-            for subtitle_name in subtitle_names:
-                if os.path.exists(f'/tmp/{subtitle_name}'):
-                    os.remove(f'/tmp/{subtitle_name}')
-        except Exception as e:
-            logging.error(f"Error deleting file: {e}")
         await asyncio.sleep(10)
         await event.delete()
         # raise events.StopPropagation

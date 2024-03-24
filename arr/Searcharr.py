@@ -58,17 +58,6 @@ async def reuqest_search(event):
                                 metadataInfo = {'type': 'tv' if s == 'tv' else 'anime', 'info': seriesInfo[0]}
                         else:
                             await event.reply(f"已在队列中, 请勿重复添加")
-                    # elif s == 'anime':
-                    #     animeInfo = await sonarr.GetAnimeInfo(reply_message.text)
-                    #     if animeInfo is None or not animeInfo:
-                    #         animeInfo = await sonarr.animeLookup(reply_message.text)
-                    #         if animeInfo is None or not animeInfo:
-                    #             await event.reply(f"未找到该动画, 请检查 tvdbId 是否正确")
-                    #         else:
-                    #             await SendInfo(event, animeInfo[0], _class='anime')
-                    #             metadataInfo = {'type': 'anime', 'info': animeInfo[0]}
-                    #     else:
-                    #         await event.reply(f"已在队列中, 请勿重复添加")
                     elif s == 'movie':
                         movieInfo = await radarr.GetMovieInfo(reply_message.text)
                         if movieInfo is None or not movieInfo:
@@ -193,7 +182,7 @@ async def SendInfo(event, info, _class):
         logging.error(traceback.format_exc())
         await event.reply(f"发送错误: {e}")
 
-@client.on(events.CallbackQuery(pattern=r'^(movie_|tv_|anime).*$'))
+@client.on(events.CallbackQuery(pattern=r'^(movie_|tv_).*$|^anime$'))
 async def add_search(event):
     global metadataInfo
     try:
