@@ -43,32 +43,32 @@ async def reuqest_search(event):
     metadataInfo_old = metadataInfo
     s = event.data.decode().split('_')[0]
     async with client.conversation(event.chat_id, timeout=60) as conv:
-            await conv.send_message('请输入' + (" tvdbId" if {s == "anime" or "tv"} else "电影的 tmdbId"))
+            await conv.send_message(f'请输入{" tvdbId" if s == "anime" or s == "tv" else "电影的 tmdbId"}')
             try:
                 reply_message = await conv.get_response()
                 if reply_message.text.isdigit():
-                    if s == 'tv':
-                        seriesInfo = await sonarr.GetSeriesInfo(reply_message.text)
+                    if s == 'tv' or s == 'anime':
+                        seriesInfo = await sonarr.GetSeriesInfo(reply_message.text, s)
                         if seriesInfo is None or not seriesInfo:
-                            seriesInfo = await sonarr.seriesLookup(reply_message.text)
+                            seriesInfo = await sonarr.seriesLookup(reply_message.text, s)
                             if seriesInfo is None or not seriesInfo:
-                                await event.reply(f"未找到该剧集, 请检查 tvdbId 是否正确")
+                                await event.reply(f"未找到该{'剧集' if s == 'tv' else '动画'}, 请检查 tvdbId 是否正确")
                             else:
-                                await SendInfo(event, seriesInfo[0], _class='tv')
-                                metadataInfo = {'type': 'tv', 'info': seriesInfo[0]}
+                                await SendInfo(event, seriesInfo[0], _class='tv' if s == 'tv' else 'anime')
+                                metadataInfo = {'type': 'tv' if s == 'tv' else 'anime', 'info': seriesInfo[0]}
                         else:
                             await event.reply(f"已在队列中, 请勿重复添加")
-                    elif s == 'anime':
-                        animeInfo = await sonarr.GetAnimeInfo(reply_message.text)
-                        if animeInfo is None or not animeInfo:
-                            animeInfo = await sonarr.animeLookup(reply_message.text)
-                            if animeInfo is None or not animeInfo:
-                                await event.reply(f"未找到该动画, 请检查 tvdbId 是否正确")
-                            else:
-                                await SendInfo(event, animeInfo[0], _class='anime')
-                                metadataInfo = {'type': 'anime', 'info': animeInfo[0]}
-                        else:
-                            await event.reply(f"已在队列中, 请勿重复添加")
+                    # elif s == 'anime':
+                    #     animeInfo = await sonarr.GetAnimeInfo(reply_message.text)
+                    #     if animeInfo is None or not animeInfo:
+                    #         animeInfo = await sonarr.animeLookup(reply_message.text)
+                    #         if animeInfo is None or not animeInfo:
+                    #             await event.reply(f"未找到该动画, 请检查 tvdbId 是否正确")
+                    #         else:
+                    #             await SendInfo(event, animeInfo[0], _class='anime')
+                    #             metadataInfo = {'type': 'anime', 'info': animeInfo[0]}
+                    #     else:
+                    #         await event.reply(f"已在队列中, 请勿重复添加")
                     elif s == 'movie':
                         movieInfo = await radarr.GetMovieInfo(reply_message.text)
                         if movieInfo is None or not movieInfo:
