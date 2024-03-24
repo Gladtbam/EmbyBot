@@ -81,6 +81,44 @@ async def GetSeriesInfo(tvdbId, seriesType):
 #         logging.error(f"Error looking up series: {e}")
 #         return None
     
+async def GetEpisodeInfo(seriesId, seriesType):
+    try:
+        if seriesType == "anime":
+            seriesHeaders = anime_headers
+            seriesHost = config.sonarrAnime.Host
+        elif seriesType == "tv":
+            seriesHeaders = headers
+            seriesHost = config.sonarr.Host
+        async with aiohttp.ClientSession(headers=seriesHeaders) as session:
+            async with session.get(f"{seriesHost}/api/v3/episode?seriesId={seriesId}&includeImages=true") as resp:
+                if resp.status == 200:
+                    return await resp.json()
+                else:
+                    logging.info(f"Error looking up series: {resp.status}")
+                    return None
+    except Exception as e:
+        logging.error(f"Error looking up series: {e}")
+        return None
+
+async def GetEpisodeId(episodeId, seriesType):
+    try:
+        if seriesType == "anime":
+            seriesHeaders = anime_headers
+            seriesHost = config.sonarrAnime.Host
+        elif seriesType == "tv":
+            seriesHeaders = headers
+            seriesHost = config.sonarr.Host
+        async with aiohttp.ClientSession(headers=seriesHeaders) as session:
+            async with session.get(f"{seriesHost}/api/v3/episode/{episodeId}") as resp:
+                if resp.status == 200:
+                    return await resp.json()
+                else:
+                    logging.info(f"Error looking up series: {resp.status}")
+                    return None
+    except Exception as e:
+        logging.error(f"Error looking up series: {e}")
+        return None
+    
 async def AddSeries(seriesInfo, rootFolderPath, seriesType):
     try:
         if seriesType == "anime":

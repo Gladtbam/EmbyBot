@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 import traceback
 import os
 import zipfile
+import shutil
 
 config = init_config()
 
@@ -17,7 +18,7 @@ config = init_config()
 async def request_subtitle(event):
     keyboard = [
         Button.inline('电影', data='movie_subtitle'),
-        Button.inline('剧集', data='series_subtitle'),
+        Button.inline('剧集', data='tv_subtitle'),
         Button.inline('动画', data='anime_subtitle'),
     ]
     message = None
@@ -65,10 +66,10 @@ async def analyse_subtitle(_calss, dbId, subtitle_names, event):
     try:
         if _calss == 'movie':
             Info = await radarr.GetMovieInfo(dbId)
-        elif _calss == 'series':
-            Info = await sonarr.GetSeriesInfo(dbId)
-        elif _calss == 'anime':
-            Info = await sonarr.GetAnimeInfo(dbId)
+        elif _calss == 'tv' or _calss == 'anime':
+            Info = await sonarr.GetSeriesInfo(dbId, _calss)
+        # elif _calss == 'anime':
+        #     Info = await sonarr.GetAnimeInfo(dbId)
         else:
             Info = None
             await event.respond('未知的类型')
@@ -76,62 +77,72 @@ async def analyse_subtitle(_calss, dbId, subtitle_names, event):
         if Info is not None and Info:
             message = await client.send_message(event.sender_id,'正在处理字幕文件...')
             if _calss == 'movie':
-                movieInfo = await bazarr.GetMovie(Info)
-                if movieInfo is not None and movieInfo:
-                    for subtitle_name in subtitle_names:
-                        subtitle = f'/tmp/{subtitle_name}'
-                        language = subtitle_name[subtitle_name.index('.')+1:subtitle_name.rindex('.')]
-                        _bool = await bazarr.MoviesSubtitles(movieInfo, subtitle, language)
-                        if _bool:
-                            await client.edit_message(message, message.text + f'\n{subtitle_name} ...... ok')
-                        else:
-                            await client.edit_message(message, message.text + f'\n{subtitle_name} ...... fail')
-                else:
-                    await client.edit_message(message, message.text + '\n未找到对应的电影')
-            elif _calss == 'series':
-                seriesInfo = await bazarr.GetSeriesEpisode(Info[0])
+                for subtitle_name in subtitle_names:
+                    subtitle = f'/tmp/{subtitle_name}'
+                    subtitle_suffix = subtitle_name[subtitle_name.rindex('.')+1:]
+                    language = subtitle_name[subtitle_name.index('.')+1:subtitle_name.rindex('.')]
+                    movieFilePath = Info[0]['movieFile']['path'].rpartition('.')[0]
+                    destination = f"{movieFilePath}.{language}.{subtitle_suffix}"
+                    shutil.move(subtitle, destination)
+                    if os.path.exists(destination):
+                        await client.edit_message(message, message.text + f'\n{subtitle_name} ...... ok')
+                    else:
+                        await client.edit_message(message, message.text + f'\n{subtitle_name} ...... fail')
+            elif _calss == 'tv' or _calss == 'anime':
+                seriesInfo = await sonarr.GetEpisodeInfo(Info[0]['id'], _calss)
                 if seriesInfo is not None and seriesInfo:
+                    # episodesInfo = [{'id': episode['id'], 'seasonNumber': episode['seasonNumber'], 'episodeNumber': episode['episodeNumber']} for episode in seriesInfo]
+                    episodesInfo = {}
+                    for episode in seriesInfo:
+                        if episode['seasonNumber'] not in episodesInfo:
+                            episodesInfo[episode['seasonNumber']] = {}
+                        episodesInfo[episode['seasonNumber']][episode['episodeNumber']] = episode['id']
+                    print(episodesInfo)
                     for subtitle_name in subtitle_names:
                         subtitle = f'/tmp/{subtitle_name}'
+                        subtitle_suffix = subtitle_name[subtitle_name.rindex('.')+1:]
                         season = int(subtitle_name[subtitle_name.index('S')+1:subtitle_name.index('E')])
                         episode = int(subtitle_name[subtitle_name.index('E')+1:subtitle_name.index('.')])
                         language = subtitle_name[subtitle_name.index('.')+1:subtitle_name.rindex('.')]
-                        for item in seriesInfo:
-                            if item['season'] == season and item['episode'] == episode:
-                                _bool = await bazarr.SeisesSubtitles(item, subtitle, language)
-                                if _bool:
+                        episodeId = episodesInfo.get(season, {}).get(episode, None)
+                        if episodeId is not None:
+                            episodeInfo = await sonarr.GetEpisodeId(episodeId, _calss)
+                            if episodeInfo and episodeInfo['seasonNumber'] == season and episodeInfo['episodeNumber'] == episode:
+                                episodeFilePath = episodeInfo['episodeFile']['path'].rpartition('.')[0]
+                                destination = f"{episodeFilePath}.{language}.{subtitle_suffix}"
+                                shutil.move(subtitle, destination)
+                                if os.path.exists(destination):
                                     message = await client.edit_message(message, message.text + f'\n{subtitle_name} ...... ok')
                                 else:
                                     message = await client.edit_message(message, message.text + f'\n{subtitle_name} ...... fail0')
-                                break
-                            # else:
-                                # message = await client.edit_message(message, f'{subtitle_name} ...... fail1')
-                else:
-                    await client.edit_message(message, message.text + '\n未找到对应的剧集')
-            elif _calss == 'anime':
-                animeInfo = await bazarr.GetAnimeEpisode(Info[0])
-                if animeInfo is not None and animeInfo:
-                    for subtitle_name in subtitle_names:
-                        subtitle = f'/tmp/{subtitle_name}'
-                        season = int(subtitle_name[subtitle_name.index('S')+1:subtitle_name.index('E')])
-                        episode = int(subtitle_name[subtitle_name.index('E')+1:subtitle_name.index('.')])
-                        language = subtitle_name[subtitle_name.index('.')+1:subtitle_name.rindex('.')]
-                        for item in animeInfo:
-                            if item['season'] == season and item['episode'] == episode:
-                                _bool = await bazarr.AnimeSubtitles(item, subtitle, language)
-                                if _bool:
-                                    message = await client.edit_message(message, message.text + f'\n{subtitle_name} ...... ok')
-                                else:
-                                    message = await client.edit_message(message, message.text + f'\n{subtitle_name} ...... fail')
-                                break
                             else:
-                                message = await client.edit_message(message, message.text + f'\n{subtitle_name} ...... fail')
+                                message = await client.edit_message(message, f'{subtitle_name} ...... fail1')
                 else:
-                    await client.edit_message(message, message.text + '\n未找到对应的动漫')
+                    await client.edit_message(message, message.text + f'\n未找到对应的{"剧集" if _calss == "tv" else "动画"}')
+            # elif _calss == 'anime':
+            #     animeInfo = await bazarr.GetAnimeEpisode(Info[0])
+            #     if animeInfo is not None and animeInfo:
+            #         for subtitle_name in subtitle_names:
+            #             subtitle = f'/tmp/{subtitle_name}'
+            #             season = int(subtitle_name[subtitle_name.index('S')+1:subtitle_name.index('E')])
+            #             episode = int(subtitle_name[subtitle_name.index('E')+1:subtitle_name.index('.')])
+            #             language = subtitle_name[subtitle_name.index('.')+1:subtitle_name.rindex('.')]
+            #             for item in animeInfo:
+            #                 if item['season'] == season and item['episode'] == episode:
+            #                     _bool = await bazarr.AnimeSubtitles(item, subtitle, language)
+            #                     if _bool:
+            #                         message = await client.edit_message(message, message.text + f'\n{subtitle_name} ...... ok')
+            #                     else:
+            #                         message = await client.edit_message(message, message.text + f'\n{subtitle_name} ...... fail')
+            #                     break
+            #                 else:
+            #                     message = await client.edit_message(message, message.text + f'\n{subtitle_name} ...... fail')
+            #     else:
+            #         await client.edit_message(message, message.text + '\n未找到对应的动漫')
             else:
                 await client.edit_message(message, message.text + '\n未知的类型')
         else:
-            await event.respond('未找到对应的电影/剧集/动漫')
+            await event.respond('未找到对应的电影/剧集/动画')
     except Exception as e:
         logging.error(traceback.format_exc())
         await event.respond('处理字幕文件时发生错误, 请检查文件名是否正确')
