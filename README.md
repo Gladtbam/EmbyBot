@@ -183,22 +183,6 @@ WantedBy=default.target
     <tr>
         <td>ApiKey</td>
     </tr>
-    <tr>
-        <td rowspan="2">Bazarr</td>
-        <td>Host</td>
-        <td rowspan="2">字幕自动化</td>
-    </tr>
-    <tr>
-        <td>ApiKey</td>
-    </tr>
-    <tr>
-        <td rowspan="2">BazarrAnime</td>
-        <td>Host</td>
-        <td rowspan="2">动画字幕自动化</td>
-    </tr>
-    <tr>
-        <td>ApiKey</td>
-    </tr>
 </table>
 
 > **AdminId 存在BUG，其无法正常生成为列表，请自行修改为列表的格式，示例如下**
@@ -209,7 +193,7 @@ other:
     - 管理员2_ID
 ```
 
->> 求片功能依赖于Sonarr和Radarr，字幕上传功能依赖于Bazarr，并且Bazarr依赖于Sonarr与Radarr
+>> 求片功能依赖于Sonarr和Radarr
 
 # 选择启用功能
 
