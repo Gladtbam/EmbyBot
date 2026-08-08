@@ -21,7 +21,7 @@ dependencies = [
     "python-socks>=2.8.2",
     "sqlalchemy[asyncio]>=2.0.51",
     "telethon>=1.44.0",
-    "uvicorn[standard]>=0.51.0",
+    "uvicorn[standard]>=0.52.1",
 ]
 
 [tool.pyright]
