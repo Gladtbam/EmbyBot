@@ -7,7 +7,7 @@ requires-python = ">=3.11"
 dependencies = [
     "aiofiles>=25.1.0",
     "aiosqlite>=0.22.1",
-    "alembic>=1.18.5",
+    "alembic>=1.19.0",
     "apscheduler>=3.11.3",
     "cryptg>=0.6.0",
     "fastapi>=0.139.2",
