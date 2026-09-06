@@ -9,7 +9,7 @@ from typing import Any, Literal
 from urllib.parse import urlparse
 
 from fastapi import FastAPI
-from httpx import AsyncClient, HTTPError, RequestError
+from httpx2 import AsyncClient, HTTPError, RequestError
 from jinja2.sandbox import SandboxedEnvironment
 from loguru import logger
 from sqlalchemy.ext.asyncio.session import AsyncSession
@@ -26,6 +26,7 @@ from services.media_service import MediaService
 from services.user_service import Result
 
 settings = get_settings()
+
 
 class AccountService:
     def __init__(self, app: FastAPI, session: AsyncSession) -> None:
@@ -48,11 +49,13 @@ class AccountService:
         if parsed.username is not None or parsed.password is not None:
             return False
 
-        if parsed.scheme not in ('http', 'https'):
+        if parsed.scheme not in ("http", "https"):
             return False
 
         try:
-            addr_infos = socket.getaddrinfo(hostname, None, socket.AF_UNSPEC, socket.SOCK_STREAM)
+            addr_infos = socket.getaddrinfo(
+                hostname, None, socket.AF_UNSPEC, socket.SOCK_STREAM
+            )
         except socket.gaierror:
             return False
 
@@ -61,7 +64,13 @@ class AccountService:
 
         for addr_info in addr_infos:
             ip = ipaddress.ip_address(addr_info[4][0])
-            if ip.is_private or ip.is_loopback or ip.is_reserved or ip.is_link_local or ip.is_multicast:
+            if (
+                ip.is_private
+                or ip.is_loopback
+                or ip.is_reserved
+                or ip.is_link_local
+                or ip.is_multicast
+            ):
                 return False
 
         return True
@@ -81,14 +90,16 @@ class AccountService:
 
         if parsed_url.scheme != parsed_prefix.scheme:
             return False
-        if (parsed_url.hostname or '').lower() != (parsed_prefix.hostname or '').lower():
+        if (parsed_url.hostname or "").lower() != (
+            parsed_prefix.hostname or ""
+        ).lower():
             return False
 
         if parsed_url.port != parsed_prefix.port:
             return False
 
-        prefix_path = parsed_prefix.path or '/'
-        url_path = parsed_url.path or '/'
+        prefix_path = parsed_prefix.path or "/"
+        url_path = parsed_url.path or "/"
         if not url_path.startswith(prefix_path):
             return False
 
@@ -100,7 +111,11 @@ class AccountService:
         if not server or not server.registration_external_url:
             return Result(False, "服务器配置错误：缺少外部验证链接。")
 
-        prefixes = [url.strip() for url in server.registration_external_url.split('|') if url.strip()]
+        prefixes = [
+            url.strip()
+            for url in server.registration_external_url.split("|")
+            if url.strip()
+        ]
         target_url = None
 
         user_input = user_input.strip()
@@ -114,7 +129,7 @@ class AccountService:
                 return Result(False, "提供的链接不在允许的验证范围内。")
         else:
             # 非 URL 输入不允许包含可能导致 URL 解析异常的特殊字符
-            if any(c in user_input for c in ('@', '\\', '\n', '\r')):
+            if any(c in user_input for c in ("@", "\\", "\n", "\r")):
                 return Result(False, "输入包含非法字符。")
             if not prefixes:
                 return Result(False, "服务器未配置有效的验证前缀。")
@@ -125,22 +140,20 @@ class AccountService:
             return Result(False, "验证请求被拒绝：目标地址不允许。")
 
         try:
-            headers = {
-                "User-Agent": "TellyMeta/1.0"
-            }
-            async with AsyncClient(timeout=10.0, follow_redirects=False, headers=headers) as client:
+            headers = {"User-Agent": "TellyMeta/1.0"}
+            async with AsyncClient(
+                timeout=10.0, follow_redirects=False, headers=headers
+            ) as client:
                 response = await client.get(target_url)
 
                 if server.registration_external_parser:
                     env = SandboxedEnvironment()
                     context = {
-                        "response": response, 
+                        "response": response,
                         "r": response,
-
                         "json": json,
                         "base64": base64,
                         "re": re,
-
                         "len": len,
                         "int": int,
                         "str": str,
@@ -150,20 +163,30 @@ class AccountService:
                     }
                     try:
                         # 执行自定义解析代码
-                        expr = env.compile_expression(server.registration_external_parser)
+                        expr = env.compile_expression(
+                            server.registration_external_parser
+                        )
                         is_valid = expr(**context)
                         if is_valid:
                             return Result(True, "验证通过")
                         else:
                             return Result(False, "验证失败 (解析未通过)。")
-                    except (NameError, TypeError, ValueError, SyntaxError, AttributeError) as e:
+                    except (
+                        NameError,
+                        TypeError,
+                        ValueError,
+                        SyntaxError,
+                        AttributeError,
+                    ) as e:
                         logger.error(f"外部验证解析代码执行错误: {e}")
                         return Result(False, f"验证解析出错: {e}")
                 else:
                     if response.is_success:
                         return Result(True, "验证通过")
                     else:
-                        return Result(False, f"验证失败 (Status: {response.status_code})。")
+                        return Result(
+                            False, f"验证失败 (Status: {response.status_code})。"
+                        )
         except RequestError as e:
             logger.error("外部验证错误：{}", e)
             return Result(False, f"验证请求发生网络错误: {str(e)}")
@@ -173,7 +196,7 @@ class AccountService:
         user_id: int,
         username: str | None | Literal[False],
         server_id: int,
-        skip_checks: bool = False
+        skip_checks: bool = False,
     ) -> Result:
         """注册新用户
         Args:
@@ -198,16 +221,22 @@ class AccountService:
         elif mode == RegistrationMode.COUNT:
             if server.registration_count_limit > 0:
                 can_register = True
-                await self.server_repo.update_policy_config(server.id, count=server.registration_count_limit - 1)
+                await self.server_repo.update_policy_config(
+                    server.id, count=server.registration_count_limit - 1
+                )
             else:
-                await self.server_repo.update_policy_config(server.id, mode=RegistrationMode.DEFAULT)
+                await self.server_repo.update_policy_config(
+                    server.id, mode=RegistrationMode.DEFAULT
+                )
                 return Result(False, "该服务器注册名额已满。")
         elif mode == RegistrationMode.TIME:
             limit_time = float(server.registration_time_limit)
             if limit_time > datetime.now().timestamp():
                 can_register = True
             else:
-                await self.server_repo.update_policy_config(server.id, mode=RegistrationMode.DEFAULT)
+                await self.server_repo.update_policy_config(
+                    server.id, mode=RegistrationMode.DEFAULT
+                )
                 return Result(False, "该服务器开放注册时间已截止。")
         elif mode == RegistrationMode.OPEN:
             can_register = True
@@ -218,7 +247,9 @@ class AccountService:
                 can_register = True
                 await self.telegram_repo.update_score(user_id, -register_score)
             else:
-                return Result(False, f"您的积分不足，注册该服务器需要 **{register_score}** 积分。")
+                return Result(
+                    False, f"您的积分不足，注册该服务器需要 **{register_score}** 积分。"
+                )
         else:
             return Result(False, "该服务器当前未开放注册。")
 
@@ -229,7 +260,9 @@ class AccountService:
         if not media_service:
             # 回滚积分扣除（如果是积分注册）
             if mode == RegistrationMode.DEFAULT:
-                await self.telegram_repo.update_score(user_id, int(await self.telegram_repo.get_renew_score()))
+                await self.telegram_repo.update_score(
+                    user_id, int(await self.telegram_repo.get_renew_score())
+                )
             return Result(False, "服务器连接实例未找到，请联系管理员。")
         try:
             media_user_dto, pw = await media_service.create(username)
@@ -242,15 +275,21 @@ class AccountService:
                 server_id=server.id,
                 media_id=media_user_dto.Id,
                 media_name=username,
-                expires_at=expires_at
+                expires_at=expires_at,
             )
 
             if not server.nsfw_enabled:
-                await self._apply_nsfw_policy(media_service, media_user_dto.Id, server, enable_nsfw=False)
+                await self._apply_nsfw_policy(
+                    media_service, media_user_dto.Id, server, enable_nsfw=False
+                )
             else:
-                await media_service.update_policy(media_user_dto.Id, {'EnableAllFolders': True}, is_none=True)
+                await media_service.update_policy(
+                    media_user_dto.Id, {"EnableAllFolders": True}, is_none=True
+                )
 
-            return Result(True, textwrap.dedent(f"""\
+            return Result(
+                True,
+                textwrap.dedent(f"""\
                 🎉 **注册成功！**
                 
                 服务器: `{server.name}`
@@ -260,7 +299,8 @@ class AccountService:
                 
                 有效期至: {media_user.expires_at.strftime('%Y-%m-%d')}
                 请尽快登录并修改密码，祝您观影愉快！
-            """))
+            """),
+            )
         except HTTPError:
             logger.error("{}: {} 注册失败", username, user_id)
             return Result(False, "注册失败，请联系管理员")
@@ -271,7 +311,8 @@ class AccountService:
         media_user_id: str,
         server: ServerInstance,
         enable_nsfw: bool,
-        current_policy: Any | None = None) -> None:
+        current_policy: Any | None = None,
+    ) -> None:
         """辅助方法：应用 NSFW 策略到媒体服务器
         Args:
             enable_nsfw: True 表示允许观看 NSFW (解锁)；False 表示禁止观看 (锁定)
@@ -288,16 +329,20 @@ class AccountService:
         # 2. 修改 NSFW 相关字段
         if enable_nsfw:
             # 允许看 NSFW -> 开启 "EnableAllFolders"，清空排除列表
-            policy_dict['EnableAllFolders'] = True
-            policy_dict['EnabledFolders'] = []
+            policy_dict["EnableAllFolders"] = True
+            policy_dict["EnabledFolders"] = []
             if server.server_type == ServerType.EMBY:
-                policy_dict['ExcludedSubFolders'] = []
+                policy_dict["ExcludedSubFolders"] = []
 
             await client.update_policy(media_user_id, policy_dict, is_none=True)
             return
 
         # 禁止看 NSFW -> 计算允许的库列表 (白名单模式)
-        nsfw_ids = set(server.nsfw_library_ids.split('|')) if server.nsfw_library_ids else set()
+        nsfw_ids = (
+            set(server.nsfw_library_ids.split("|"))
+            if server.nsfw_library_ids
+            else set()
+        )
 
         try:
             all_libs = await client.get_libraries() or []
@@ -308,22 +353,26 @@ class AccountService:
         safe_lib_ids = []
         if server.server_type == ServerType.JELLYFIN:
             safe_lib_ids = [
-                lib.ItemId for lib in all_libs
+                lib.ItemId
+                for lib in all_libs
                 if lib.ItemId and lib.ItemId not in nsfw_ids
             ]
         else:
             safe_lib_ids = [
-                lib.Guid for lib in all_libs
-                if lib.Guid and lib.Guid not in nsfw_ids
+                lib.Guid for lib in all_libs if lib.Guid and lib.Guid not in nsfw_ids
             ]
 
-        policy_dict['EnableAllFolders'] = False
-        policy_dict['EnabledFolders'] = safe_lib_ids
+        policy_dict["EnableAllFolders"] = False
+        policy_dict["EnabledFolders"] = safe_lib_ids
 
         if server.server_type == ServerType.EMBY:
             # Emby 还需要处理子文件夹排除
-            nsfw_sub_ids = server.nsfw_sub_library_ids.split('|') if server.nsfw_sub_library_ids else []
-            policy_dict['ExcludedSubFolders'] = nsfw_sub_ids
+            nsfw_sub_ids = (
+                server.nsfw_sub_library_ids.split("|")
+                if server.nsfw_sub_library_ids
+                else []
+            )
+            policy_dict["ExcludedSubFolders"] = nsfw_sub_ids
 
         await client.update_policy(media_user_id, policy_dict, is_none=True)
 
@@ -349,25 +398,34 @@ class AccountService:
             return Result(False, "续期失败，无法获取您的账户信息，请联系管理员。")
 
         if media_user.expires_at > datetime.now() + timedelta(days=7):
-            return Result(False, f"续期失败，您的账户有效期还有 {(media_user.expires_at - datetime.now()).days} 天，无需续期。")
+            return Result(
+                False,
+                f"续期失败，您的账户有效期还有 {(media_user.expires_at - datetime.now()).days} 天，无需续期。",
+            )
 
         if use_score:
             user = await self.telegram_repo.get_or_create(user_id)
             renew_score = int(await self.telegram_repo.get_renew_score())
             if user.score < renew_score:
-                return Result(False, f"续期失败，您的积分不足，续期需要 {renew_score} 积分。")
+                return Result(
+                    False, f"续期失败，您的积分不足，续期需要 {renew_score} 积分。"
+                )
             await self.telegram_repo.update_score(user_id, -renew_score)
 
-        media_user = await self.media_repo.extend_expiry(media_user, server.registration_expiry_days)
+        media_user = await self.media_repo.extend_expiry(
+            media_user, server.registration_expiry_days
+        )
         if media_info.Policy.IsDisabled:
             await client.ban_or_unban(media_user.media_id, is_ban=False)
 
         return Result(
             True,
-            f"续期成功，您的 {server.name} 账户已延长至 {media_user.expires_at.strftime('%Y-%m-{} %H:%M:{}')}。"
+            f"续期成功，您的 {server.name} 账户已延长至 {media_user.expires_at.strftime('%Y-%m-{} %H:%M:{}')}。",
         )
 
-    async def redeem_code(self, user_id: int, username: str | None | Literal[False], code_str: str) -> Result:
+    async def redeem_code(
+        self, user_id: int, username: str | None | Literal[False], code_str: str
+    ) -> Result:
         """使用注册码或续期码注册或续期
         Args:
             user_id (int): 用户的 Telegram ID
@@ -381,9 +439,9 @@ class AccountService:
         if not server:
             return Result(False, "该激活码对应的服务器已失效或被删除，无法使用。")
 
-        if code.type == 'signup':
+        if code.type == "signup":
             result = await self.register(user_id, username, code.server_id)
-        elif code.type == 'renew':
+        elif code.type == "renew":
             result = await self.renew(user_id, code.server_id, False)
         else:
             return Result(False, "无效的码类型，请联系管理员。")
@@ -392,13 +450,15 @@ class AccountService:
             await self.code_repo.mark_used(code)
         return result
 
-    async def generate_code(self, user_id: int, code_type: str, server_id: int) -> Result:
+    async def generate_code(
+        self, user_id: int, code_type: str, server_id: int
+    ) -> Result:
         """生成注册码或续期码
         Args:
             user_id (int): 用户的 Telegram ID
             code_type (str): 码类型，'signup' 或 'renew'
         """
-        if code_type not in ('signup', 'renew'):
+        if code_type not in ("signup", "renew"):
             return Result(False, "无效的码类型")
 
         server = await self.server_repo.get_by_id(server_id)
@@ -414,13 +474,17 @@ class AccountService:
             score = int(await self.telegram_repo.get_renew_score())
 
         if user.score < score:
-            return Result(False, f"生成失败，您的积分不足，生成码需要 **{score}** 积分。")
+            return Result(
+                False, f"生成失败，您的积分不足，生成码需要 **{score}** 积分。"
+            )
 
         code = await self.code_repo.create(code_type, expires, server_id)
         await self.telegram_repo.update_score(user_id, -score)
 
-        type_cn = "注册码" if code_type == 'signup' else "续期码"
-        return Result(True, textwrap.dedent(f"""\
+        type_cn = "注册码" if code_type == "signup" else "续期码"
+        return Result(
+            True,
+            textwrap.dedent(f"""\
             ✅ **{type_cn}生成成功**
             
             服务器: `{server.name}`
@@ -428,7 +492,8 @@ class AccountService:
             过期时间: {code.expires_at.strftime('%Y-%m-%d')}
             
             请妥善保管此码，祝您观影愉快！
-        """))
+        """),
+        )
 
     async def toggle_nsfw_policy(self, user_id: int, server_id: int) -> Result:
         """切换用户的 NSFW 策略
@@ -453,9 +518,15 @@ class AccountService:
 
         policy = media_info.Policy
 
-        nsfw_ids = set(server.nsfw_library_ids.split('|')) if server.nsfw_library_ids else set()
+        nsfw_ids = (
+            set(server.nsfw_library_ids.split("|"))
+            if server.nsfw_library_ids
+            else set()
+        )
 
-        is_unlocked = policy.EnableAllFolders or any(lid in policy.EnabledFolders for lid in nsfw_ids)
+        is_unlocked = policy.EnableAllFolders or any(
+            lid in policy.EnabledFolders for lid in nsfw_ids
+        )
 
         target_enable_nsfw = not is_unlocked
 
@@ -464,11 +535,13 @@ class AccountService:
             media_user_id=media_user.media_id,
             server=server,
             enable_nsfw=target_enable_nsfw,
-            current_policy=policy
+            current_policy=policy,
         )
 
         action_text = "开启" if target_enable_nsfw else "关闭"
-        return Result(True, f"已 {action_text} 您的 NSFW 权限 (服务器: {server.name})。")
+        return Result(
+            True, f"已 {action_text} 您的 NSFW 权限 (服务器: {server.name})。"
+        )
 
     async def forget_password(self, user_id: int, server_id: int):
         """重置密码
@@ -489,10 +562,13 @@ class AccountService:
 
         try:
             passwd = await client.post_password(media_user.media_id)
-            return Result(True, textwrap.dedent(f"""\
+            return Result(
+                True,
+                textwrap.dedent(f"""\
                 密码重置成功！您的新密码是: `{passwd}`
                 请尽快登录并修改密码，祝您观影愉快！
-            """))
+            """),
+            )
         except HTTPError:
             return Result(False, "请稍后重试或寻求管理员帮助")
 

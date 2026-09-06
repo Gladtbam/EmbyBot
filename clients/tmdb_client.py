@@ -1,6 +1,6 @@
 import asyncio
 
-import httpx
+import httpx2
 from loguru import logger
 
 from clients.base_client import AuthenticatedClient, RateLimiter
@@ -8,7 +8,7 @@ from models.tmdb import TmdbFindPayload, TmdbMovie, TmdbSeason, TmdbTvSeries
 
 
 class TmdbClient(AuthenticatedClient):
-    def __init__(self, client: httpx.AsyncClient, api_key: str):
+    def __init__(self, client: httpx2.AsyncClient, api_key: str):
         super().__init__(client)
         self.api_key = api_key
         self._limiter = RateLimiter(rate=30, per=1.0)
@@ -18,10 +18,7 @@ class TmdbClient(AuthenticatedClient):
         self._is_logged_in = True
 
     async def _apply_auth(self):
-        return {
-            "Authorization": f"Bearer {self.api_key}",
-            "accept": "application/json"
-        }
+        return {"Authorization": f"Bearer {self.api_key}", "accept": "application/json"}
 
     async def _request(self, *args, **kwargs):
         """
@@ -31,13 +28,15 @@ class TmdbClient(AuthenticatedClient):
 
         try:
             return await super()._request(*args, **kwargs)
-        except httpx.HTTPStatusError as e:
+        except httpx2.HTTPStatusError as e:
             if e.response.status_code == 404:
                 logger.debug(f"TMDB 资源未找到 (404): {e.request.url}")
                 return None
 
             if e.response.status_code == 429:
-                logger.warning(f"TMDB 速率限制已触发 (429)。正在等待重试... URL: {e.request.url}")
+                logger.warning(
+                    f"TMDB 速率限制已触发 (429)。正在等待重试... URL: {e.request.url}"
+                )
 
                 retry_after = e.response.headers.get("Retry-After")
                 try:
@@ -52,9 +51,7 @@ class TmdbClient(AuthenticatedClient):
             raise
 
     async def find_info_by_external_id(
-        self,
-        external_source: str,
-        external_id: str
+        self, external_source: str, external_id: str
     ) -> TmdbFindPayload | None:
         """根据外部 ID 获取 TMDB 相关信息。
         Args:
@@ -64,10 +61,7 @@ class TmdbClient(AuthenticatedClient):
             TmdbFindPayload | None: TmdbFindPayload 对象，如果查询失败则返回 None。
         """
         url = f"/find/{external_id}"
-        params = {
-            "external_source": external_source,
-            "language": "zh-CN"
-        }
+        params = {"external_source": external_source, "language": "zh-CN"}
 
         return await self.get(url, params=params, response_model=TmdbFindPayload)
 
@@ -82,7 +76,9 @@ class TmdbClient(AuthenticatedClient):
         params = {"language": "zh-CN"}
         return await self.get(url, params=params, response_model=TmdbTvSeries)
 
-    async def get_tv_seasons_details(self, tmdb_id: int, season_number: int) -> TmdbSeason | None:
+    async def get_tv_seasons_details(
+        self, tmdb_id: int, season_number: int
+    ) -> TmdbSeason | None:
         """根据 TMDB ID 和季节号获取 TMDB 电视剧季节详情。
         Args:
             tmdb_id (int): TMDB 电视剧 ID。

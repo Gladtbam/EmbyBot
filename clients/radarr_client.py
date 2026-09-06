@@ -1,24 +1,29 @@
 from collections.abc import AsyncGenerator
 
-import httpx
+import httpx2
 from pydantic import TypeAdapter
 
 from clients.base_client import AuthenticatedClient
 from core.config import get_settings
-from models.radarr import (AddMovieOptions, MovieResource,
-                           QualityProfileResource, RootFolderResource)
+from models.radarr import (
+    AddMovieOptions,
+    MovieResource,
+    QualityProfileResource,
+    RootFolderResource,
+)
 
 setting = get_settings()
+
 
 class RadarrClient(AuthenticatedClient):
     def __init__(
         self,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         api_key: str,
         server_name: str = "Radarr",
         path_mappings: dict[str, str] | None = None,
         notify_topic_id: int | None = None,
-        request_notify_topic_id: int | None = None
+        request_notify_topic_id: int | None = None,
     ) -> None:
         super().__init__(client)
         self.api_key = api_key
@@ -35,7 +40,7 @@ class RadarrClient(AuthenticatedClient):
         return {
             "X-Api-Key": self.api_key,
             "accept": "application/json",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
 
     def to_local_path(self, remote_path: str | None) -> str | None:
@@ -55,7 +60,7 @@ class RadarrClient(AuthenticatedClient):
             MovieResource | None: 返回电影信息，如果查询失败则返回 None。
         """
         url = "/api/v3/movie/lookup/tmdb"
-        params = {'tmdbId': tmdb_id}
+        params = {"tmdbId": tmdb_id}
         movie = await self.get(url, params=params, response_model=MovieResource)
         if movie:
             movie.path = self.to_local_path(movie.path)
@@ -69,9 +74,12 @@ class RadarrClient(AuthenticatedClient):
             AsyncGenerator[MovieResource, None]: 返回电影信息的生成器。
         """
         url = "/api/v3/movie/lookup"
-        params = {'term': term}
-        response = await self.get(url, params=params,
-            parser=lambda data: TypeAdapter(list[MovieResource]).validate_python(data))
+        params = {"term": term}
+        response = await self.get(
+            url,
+            params=params,
+            parser=lambda data: TypeAdapter(list[MovieResource]).validate_python(data),
+        )
         if response is None:
             return
 
@@ -87,9 +95,12 @@ class RadarrClient(AuthenticatedClient):
             MovieResource | None: 返回电影信息，如果查询失败则返回 None。
         """
         url = "/api/v3/movie"
-        params = {'tmdbId': tmdb_id}
-        response = await self.get(url, params=params,
-            parser=lambda data: TypeAdapter(list[MovieResource]).validate_python(data))
+        params = {"tmdbId": tmdb_id}
+        response = await self.get(
+            url,
+            params=params,
+            parser=lambda data: TypeAdapter(list[MovieResource]).validate_python(data),
+        )
 
         if response and response[0]:
             movie = response[0]
@@ -110,15 +121,17 @@ class RadarrClient(AuthenticatedClient):
         movie_resource.monitored = True
         movie_resource.minimumAvailability = "released"
         movie_resource.addOptions = AddMovieOptions(
-            ignoreEpisodesWithFiles = False,
-            ignoreEpisodesWithoutFiles = False,
-            monitor = "movieOnly",
-            searchForMovie = True,
-            addMethod = "manual"
+            ignoreEpisodesWithFiles=False,
+            ignoreEpisodesWithoutFiles=False,
+            monitor="movieOnly",
+            searchForMovie=True,
+            addMethod="manual",
         )
-        return await self.post(url,
+        return await self.post(
+            url,
             json=movie_resource.model_dump(exclude_unset=True),
-            response_model=MovieResource)
+            response_model=MovieResource,
+        )
 
     async def get_root_folders(self) -> list[RootFolderResource] | None:
         """获取 Radarr 的根文件夹列表。
@@ -126,8 +139,12 @@ class RadarrClient(AuthenticatedClient):
             list[RootFolderResource] | None: 返回根文件夹路径的列表，如果查询失败则返回 None。
         """
         url = "/api/v3/rootfolder"
-        return await self.get(url,
-            parser=lambda data: TypeAdapter(list[RootFolderResource]).validate_python(data))
+        return await self.get(
+            url,
+            parser=lambda data: TypeAdapter(list[RootFolderResource]).validate_python(
+                data
+            ),
+        )
 
     async def get_quality_profiles(self) -> list[QualityProfileResource] | None:
         """获取 Radarr 的质量配置文件列表。
@@ -135,14 +152,20 @@ class RadarrClient(AuthenticatedClient):
             list[QualityProfileResource] | None: 返回质量配置文件的列表，如果查询失败则返回 None。
         """
         url = "/api/v3/qualityprofile"
-        return await self.get(url,
-            parser=lambda data: TypeAdapter(list[QualityProfileResource]).validate_python(data))
+        return await self.get(
+            url,
+            parser=lambda data: TypeAdapter(
+                list[QualityProfileResource]
+            ).validate_python(data),
+        )
 
     async def get_all_movies(self) -> list[MovieResource] | None:
         """获取 Radarr 中的所有电影信息。"""
         url = "/api/v3/movie"
-        response = await self.get(url,
-            parser=lambda data: TypeAdapter(list[MovieResource]).validate_python(data))
+        response = await self.get(
+            url,
+            parser=lambda data: TypeAdapter(list[MovieResource]).validate_python(data),
+        )
 
         if response:
             for movie in response:

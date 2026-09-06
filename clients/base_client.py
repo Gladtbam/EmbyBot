@@ -4,15 +4,17 @@ from collections.abc import Callable
 from time import monotonic
 from typing import Any, Literal, TypeVar, overload
 
-import httpx
+import httpx2
 from loguru import logger
 from pydantic import BaseModel, ValidationError
 
-T = TypeVar('T', bound=BaseModel)
-T_parser = TypeVar('T_parser')
+T = TypeVar("T", bound=BaseModel)
+T_parser = TypeVar("T_parser")
+
 
 class RateLimiter:
     """速率限制器"""
+
     def __init__(self, rate: int, per: float = 1.0):
         self.rate = rate
         self.per = per
@@ -38,9 +40,11 @@ class RateLimiter:
             else:
                 self.allowance -= amount
 
+
 class BaseClient(ABC):
     """抽象基类，定义了基本的HTTP客户端接口"""
-    def __init__(self, client: httpx.AsyncClient):
+
+    def __init__(self, client: httpx2.AsyncClient):
         self._client = client
 
     async def close(self):
@@ -56,8 +60,8 @@ class BaseClient(ABC):
         response_model: type[T] | None = None,
         parser: Callable[[Any], T_parser] | None = None,
         raw: bool = False,
-        **kwargs
-    ) -> httpx.Response | T | T_parser | None:
+        **kwargs,
+    ) -> httpx2.Response | T | T_parser | None:
         """发送HTTP请求，子类可以重写此方法以实现特定的认证逻辑
         Args:
             method (str): HTTP方法，如'GET', 'POST', 'DELETE'等。
@@ -71,10 +75,10 @@ class BaseClient(ABC):
             raise RuntimeError("HTTP 客户端未初始化。首先调用 login()。")
 
         # 设置识别程序的 User-Agent
-        headers = kwargs.get('headers', {})
-        if 'User-Agent' not in headers:
-            headers['User-Agent'] = "TellyMeta/1.0"
-        kwargs['headers'] = headers
+        headers = kwargs.get("headers", {})
+        if "User-Agent" not in headers:
+            headers["User-Agent"] = "TellyMeta/1.0"
+        kwargs["headers"] = headers
 
         max_retries = 3
 
@@ -82,10 +86,17 @@ class BaseClient(ABC):
             try:
                 response = await self._client.request(method, url, **kwargs)
 
-                if response.status_code == 403 and ("cloudflare" in response.text.lower() or "just a moment" in response.text.lower()):
-                    logger.error("HTTP 错误 403：请求被 Cloudflare 拦截。这通常是因为站点启用了 WAF 机器人检测或“我在受攻击”模式。")
+                if response.status_code == 403 and (
+                    "cloudflare" in response.text.lower()
+                    or "just a moment" in response.text.lower()
+                ):
+                    logger.error(
+                        "HTTP 错误 403：请求被 Cloudflare 拦截。这通常是因为站点启用了 WAF 机器人检测或“我在受攻击”模式。"
+                    )
                     logger.error("URL: {}", url)
-                    logger.error("提示：请尝试将运行该程序的服务器 IP 加入站点的 Cloudflare 白名单。")
+                    logger.error(
+                        "提示：请尝试将运行该程序的服务器 IP 加入站点的 Cloudflare 白名单。"
+                    )
 
                 response.raise_for_status()
                 if response_model and parser:
@@ -108,17 +119,27 @@ class BaseClient(ABC):
             except ValidationError as e:
                 logger.error("响应验证错误: {}", repr(e.errors()))
                 raise
-            except httpx.TimeoutException as e:
+            except httpx2.TimeoutException as e:
                 if attempt == max_retries:
                     logger.error("请求超时（已重试{}次）：{}", max_retries, e)
                     raise
-                logger.warning(f"请求超时，正在进行第 {attempt + 1}/{max_retries} 次重试... URL: {url}")
+                logger.warning(
+                    f"请求超时，正在进行第 {attempt + 1}/{max_retries} 次重试... URL: {url}"
+                )
                 await asyncio.sleep(1)
-            except httpx.HTTPStatusError as e:
-                if not (e.response.status_code == 403 and ("cloudflare" in e.response.text.lower() or "just a moment" in e.response.text.lower())):
-                    logger.error("HTTP 错误：{} -{}", e.response.status_code, e.response.text)
+            except httpx2.HTTPStatusError as e:
+                if not (
+                    e.response.status_code == 403
+                    and (
+                        "cloudflare" in e.response.text.lower()
+                        or "just a moment" in e.response.text.lower()
+                    )
+                ):
+                    logger.error(
+                        "HTTP 错误：{} -{}", e.response.status_code, e.response.text
+                    )
                 raise
-            except httpx.RequestError as e:
+            except httpx2.RequestError as e:
                 logger.error("请求错误：{}", e)
                 raise
             except Exception as e:
@@ -167,7 +188,7 @@ class BaseClient(ABC):
         parser: None = None,
         raw: Literal[True],
         **kwargs,
-    ) -> httpx.Response: ...
+    ) -> httpx2.Response: ...
 
     async def get(
         self,
@@ -176,10 +197,12 @@ class BaseClient(ABC):
         response_model: type[T] | None = None,
         parser: Callable[[Any], T_parser] | None = None,
         raw: bool = False,
-        **kwargs
-    ) -> httpx.Response | T | T_parser |  None:
+        **kwargs,
+    ) -> httpx2.Response | T | T_parser | None:
         """发送GET请求"""
-        return await self._request("GET", url, response_model=response_model, parser=parser, raw=raw, **kwargs)
+        return await self._request(
+            "GET", url, response_model=response_model, parser=parser, raw=raw, **kwargs
+        )
 
     @overload
     async def post(
@@ -223,7 +246,7 @@ class BaseClient(ABC):
         parser: None = None,
         raw: Literal[True],
         **kwargs,
-    ) -> httpx.Response: ...
+    ) -> httpx2.Response: ...
 
     async def post(
         self,
@@ -232,10 +255,12 @@ class BaseClient(ABC):
         response_model: type[T] | None = None,
         parser: Callable[[Any], T_parser] | None = None,
         raw: bool = False,
-        **kwargs
-    ) -> httpx.Response | T | T_parser |  None:
+        **kwargs,
+    ) -> httpx2.Response | T | T_parser | None:
         """发送POST请求"""
-        return await self._request("POST", url, response_model=response_model, parser=parser, raw=raw, **kwargs)
+        return await self._request(
+            "POST", url, response_model=response_model, parser=parser, raw=raw, **kwargs
+        )
 
     @overload
     async def delete(
@@ -279,7 +304,7 @@ class BaseClient(ABC):
         parser: None = None,
         raw: Literal[True],
         **kwargs,
-    ) -> httpx.Response: ...
+    ) -> httpx2.Response: ...
 
     async def delete(
         self,
@@ -288,17 +313,25 @@ class BaseClient(ABC):
         response_model: type[T] | None = None,
         parser: Callable[[Any], T_parser] | None = None,
         raw: bool = False,
-        **kwargs
-    ) -> httpx.Response | T | T_parser |  None:
+        **kwargs,
+    ) -> httpx2.Response | T | T_parser | None:
         """发送DELETE请求"""
-        return await self._request("DELETE", url, response_model=response_model, parser=parser, raw=raw, **kwargs)
+        return await self._request(
+            "DELETE",
+            url,
+            response_model=response_model,
+            parser=parser,
+            raw=raw,
+            **kwargs,
+        )
+
 
 class AuthenticatedClient(BaseClient):
-    def __init__(self, client: httpx.AsyncClient):
+    def __init__(self, client: httpx2.AsyncClient):
         super().__init__(client)
         self._is_logged_in = False
         self._login_lock = asyncio.Lock()
-        self._max_retries = 1 # 最大重试次数
+        self._max_retries = 1  # 最大重试次数
 
     @abstractmethod
     async def _login(self):
@@ -319,10 +352,10 @@ class AuthenticatedClient(BaseClient):
                 await self._login()
                 self._is_logged_in = True
                 logger.info("已成功登录 {}", self.__class__.__name__)
-            except httpx.HTTPStatusError as e:
+            except httpx2.HTTPStatusError as e:
                 logger.error("登录失败： {}", e.response.text)
                 raise
-            except httpx.RequestError as e:
+            except httpx2.RequestError as e:
                 logger.error("登录期间请求错误：{}", e)
                 raise
             except Exception as e:
@@ -338,22 +371,32 @@ class AuthenticatedClient(BaseClient):
         parser: Callable[[Any], T_parser] | None = None,
         raw: bool = False,
         _retry: int = 0,
-        **kwargs
-    ) -> httpx.Response | T | T_parser |  None:
-        '''自动登录逻辑'''
+        **kwargs,
+    ) -> httpx2.Response | T | T_parser | None:
+        """自动登录逻辑"""
         if not self._is_logged_in:
             await self.login()
 
         # 确保请求头中包含认证信息
         auth_headers = await self._apply_auth()
         if auth_headers:
-            kwargs['headers'] = {**kwargs.get('headers', {}), **auth_headers}
+            kwargs["headers"] = {**kwargs.get("headers", {}), **auth_headers}
         try:
-            return await super()._request(method, url, response_model=response_model, parser=parser, raw=raw, **kwargs)
-        except httpx.HTTPStatusError as e:
+            return await super()._request(
+                method,
+                url,
+                response_model=response_model,
+                parser=parser,
+                raw=raw,
+                **kwargs,
+            )
+        except httpx2.HTTPStatusError as e:
             if e.response.status_code in (401, 403):
                 # 如果是 Cloudflare 拦截，则不应尝试重新登录
-                if "cloudflare" in e.response.text.lower() or "just a moment" in e.response.text.lower():
+                if (
+                    "cloudflare" in e.response.text.lower()
+                    or "just a moment" in e.response.text.lower()
+                ):
                     raise
 
                 if _retry >= self._max_retries:
@@ -366,7 +409,13 @@ class AuthenticatedClient(BaseClient):
 
                 auth_headers = await self._apply_auth()
                 if auth_headers:
-                    kwargs['headers'] = {**kwargs.get('headers', {}), **auth_headers}
-                return await self._request(method, url, response_model=response_model, _retry = _retry + 1 ,**kwargs)
+                    kwargs["headers"] = {**kwargs.get("headers", {}), **auth_headers}
+                return await self._request(
+                    method,
+                    url,
+                    response_model=response_model,
+                    _retry=_retry + 1,
+                    **kwargs,
+                )
 
             raise

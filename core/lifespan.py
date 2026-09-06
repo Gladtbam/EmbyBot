@@ -4,7 +4,7 @@ import os
 import time
 from contextlib import asynccontextmanager
 
-import httpx
+import httpx2
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI
@@ -20,8 +20,12 @@ from clients.radarr_client import RadarrClient
 from clients.sonarr_client import SonarrClient
 from core.config import get_settings
 from core.database import DATABASE_URL, async_engine, async_session
-from core.initialization import (check_mkvtoolnix, check_required_settings,
-                                 check_sqlite_version, initialize_admin)
+from core.initialization import (
+    check_mkvtoolnix,
+    check_required_settings,
+    check_sqlite_version,
+    initialize_admin,
+)
 from core.scheduler_jobs import SCHEDULER_JOBS_REGISTRY
 from core.telegram_manager import TelethonClientWarper
 from models.orm import ServerType
@@ -32,10 +36,11 @@ from workers.mkv_worker import mkv_merge_task
 
 settings = get_settings()
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # 设置时区
-    os.environ['TZ'] = settings.timezone
+    os.environ["TZ"] = settings.timezone
     time.tzset()
     logger.info("时区已设置为 {}", settings.timezone)
 
@@ -62,44 +67,43 @@ async def lifespan(app: FastAPI):
             rpd=settings.ai_rpd,
             tpm=settings.ai_tpm,
             concurrency=settings.ai_concurrency,
-            proxy=settings.proxy
+            proxy=settings.proxy,
         )
     else:
         app.state.ai_client = None
 
     if settings.qbittorrent_base_url:
         app.state.qb_client = QbittorrentClient(
-            client=httpx.AsyncClient(
-                base_url=settings.qbittorrent_base_url,
-                proxy=settings.proxy or None
+            client=httpx2.AsyncClient(
+                base_url=settings.qbittorrent_base_url, proxy=settings.proxy or None
             ),
             username=settings.qbittorrent_username,
             password=settings.qbittorrent_password,
-            api_key=settings.qbiitorrent_api_key
+            api_key=settings.qbiitorrent_api_key,
         )
     else:
         app.state.qb_client = None
 
     if settings.tmdb_api_key:
         app.state.tmdb_client = CachedTmdbClient(
-            client=httpx.AsyncClient(
-                base_url='https://api.themoviedb.org/3',
-                timeout=httpx.Timeout(10.0, read=30.0),
-                proxy=settings.proxy or None
+            client=httpx2.AsyncClient(
+                base_url="https://api.themoviedb.org/3",
+                timeout=httpx2.Timeout(10.0, read=30.0),
+                proxy=settings.proxy or None,
             ),
-            api_key=settings.tmdb_api_key
+            api_key=settings.tmdb_api_key,
         )
     else:
         app.state.tmdb_client = None
 
     if settings.tvdb_api_key:
         app.state.tvdb_client = CachedTvdbClient(
-            client=httpx.AsyncClient(
-                base_url='https://api4.thetvdb.com/v4',
-                timeout=httpx.Timeout(10.0, read=30.0),
-                proxy=settings.proxy or None
+            client=httpx2.AsyncClient(
+                base_url="https://api4.thetvdb.com/v4",
+                timeout=httpx2.Timeout(10.0, read=30.0),
+                proxy=settings.proxy or None,
             ),
-            api_key=settings.tvdb_api_key
+            api_key=settings.tvdb_api_key,
         )
     else:
         app.state.tvdb_client = None
@@ -108,11 +112,13 @@ async def lifespan(app: FastAPI):
     app.state.telethon_client = TelethonClientWarper(app)
 
     await app.state.telethon_client.connect()
-    app.state.telethon_worker = asyncio.create_task(app.state.telethon_client.run_until_disconnected())
+    app.state.telethon_worker = asyncio.create_task(
+        app.state.telethon_client.run_until_disconnected()
+    )
 
-    app.state.sonarr_clients = {} # dict[int, SonarrClient]
-    app.state.radarr_clients = {} # dict[int, RadarrClient]
-    app.state.media_clients = {} # dict[int, MediaService]
+    app.state.sonarr_clients = {}  # dict[int, SonarrClient]
+    app.state.radarr_clients = {}  # dict[int, RadarrClient]
+    app.state.media_clients = {}  # dict[int, MediaService]
 
     # 初始化管理员用户
     async with async_session() as session:
@@ -133,59 +139,61 @@ async def lifespan(app: FastAPI):
                 match server.server_type:
                     case ServerType.SONARR:
                         app.state.sonarr_clients[server.id] = SonarrClient(
-                            client=httpx.AsyncClient(
+                            client=httpx2.AsyncClient(
                                 base_url=server.url,
-                                timeout=httpx.Timeout(10.0, read=30.0),
-                                proxy=settings.proxy or None
-                                ),
+                                timeout=httpx2.Timeout(10.0, read=30.0),
+                                proxy=settings.proxy or None,
+                            ),
                             api_key=server.api_key,
-                            server_name = server.name,
+                            server_name=server.name,
                             path_mappings=mappings,
                             notify_topic_id=server.notify_topic_id,
-                            request_notify_topic_id=server.request_notify_topic_id
+                            request_notify_topic_id=server.request_notify_topic_id,
                         )
                     case ServerType.RADARR:
                         app.state.radarr_clients[server.id] = RadarrClient(
-                            client=httpx.AsyncClient(
+                            client=httpx2.AsyncClient(
                                 base_url=server.url,
-                                timeout=httpx.Timeout(10.0, read=30.0),
-                                proxy=settings.proxy or None
-                                ),
+                                timeout=httpx2.Timeout(10.0, read=30.0),
+                                proxy=settings.proxy or None,
+                            ),
                             api_key=server.api_key,
-                            server_name = server.name,
+                            server_name=server.name,
                             path_mappings=mappings,
                             notify_topic_id=server.notify_topic_id,
-                            request_notify_topic_id=server.request_notify_topic_id
+                            request_notify_topic_id=server.request_notify_topic_id,
                         )
                     case ServerType.JELLYFIN:
                         app.state.media_clients[server.id] = JellyfinClient(
-                            client=httpx.AsyncClient(
-                                base_url=f'{server.url}',
-                                timeout=httpx.Timeout(10.0, read=30.0),
-                                proxy=settings.proxy or None
-                                ),
+                            client=httpx2.AsyncClient(
+                                base_url=f"{server.url}",
+                                timeout=httpx2.Timeout(10.0, read=30.0),
+                                proxy=settings.proxy or None,
+                            ),
                             api_key=server.api_key,
-                            server_name = server.name,
-                            notify_topic_id=server.notify_topic_id
+                            server_name=server.name,
+                            notify_topic_id=server.notify_topic_id,
                         )
                     case ServerType.EMBY:
                         app.state.media_clients[server.id] = EmbyClient(
-                            client=httpx.AsyncClient(
-                                base_url=f'{server.url}/emby',
-                                timeout=httpx.Timeout(10.0, read=30.0),
-                                proxy=settings.proxy or None
-                                ),
+                            client=httpx2.AsyncClient(
+                                base_url=f"{server.url}/emby",
+                                timeout=httpx2.Timeout(10.0, read=30.0),
+                                proxy=settings.proxy or None,
+                            ),
                             api_key=server.api_key,
-                            server_name = server.name,
-                            notify_topic_id=server.notify_topic_id
+                            server_name=server.name,
+                            notify_topic_id=server.notify_topic_id,
                         )
         finally:
             await session.close()
 
     app.state.scheduler = AsyncIOScheduler(
-        jobstores={'default': SQLAlchemyJobStore(url=DATABASE_URL.replace("+aiosqlite", ""))},
-        timezone=settings.timezone
-        )
+        jobstores={
+            "default": SQLAlchemyJobStore(url=DATABASE_URL.replace("+aiosqlite", ""))
+        },
+        timezone=settings.timezone,
+    )
 
     for job in SCHEDULER_JOBS_REGISTRY:
         app.state.scheduler.add_job(job.func, job.trigger, **job.kwargs)

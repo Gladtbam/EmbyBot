@@ -2,7 +2,7 @@ import asyncio
 import textwrap
 from contextlib import asynccontextmanager
 
-import httpx
+import httpx2
 from loguru import logger
 from openai import AsyncOpenAI, OpenAIError
 
@@ -11,12 +11,13 @@ from clients.base_client import RateLimiter
 
 class AIRateLimiter:
     """AI客户端多维速率限制器"""
+
     def __init__(
         self,
         rpm: int | None = None,
         tpm: int | None = None,
         rpd: int | None = None,
-        concurrency: int | None = None
+        concurrency: int | None = None,
     ):
         self.rpm_limiter = RateLimiter(rpm, 60.0) if rpm else None
         self.tpm_limiter = RateLimiter(tpm, 60.0) if tpm else None
@@ -39,6 +40,7 @@ class AIRateLimiter:
             if self.concurrency_sem:
                 self.concurrency_sem.release()
 
+
 class AIClientWarper:
     def __init__(
         self,
@@ -50,20 +52,22 @@ class AIClientWarper:
         rpd: int | None = None,
         tpm: int | None = None,
         concurrency: int | None = None,
-        proxy: str | None = None
+        proxy: str | None = None,
     ) -> None:
         self.client = AsyncOpenAI(
             api_key=api_key,
             base_url=base_url,
-            http_client=httpx.AsyncClient(proxy=proxy) if proxy else None
+            http_client=httpx2.AsyncClient(proxy=proxy) if proxy else None,
         )
         self.model = model
         self.temperature = temperature
-        self._limiter = AIRateLimiter(rpm=rpm, rpd=rpd, tpm=tpm, concurrency=concurrency)
+        self._limiter = AIRateLimiter(
+            rpm=rpm, rpd=rpd, tpm=tpm, concurrency=concurrency
+        )
 
     async def translate(self, key: str, text: str):
         """使用AI翻译日本动画元数据的指定字段内容为中文。
-        
+
         Args:
             key (str): 要翻译的字段名称。
             text (str): 要翻译的文本内容。
@@ -108,13 +112,15 @@ class AIClientWarper:
                     model=self.model,
                     messages=[
                         {"role": "system", "content": prompt},
-                        {"role": "user", "content": text}
+                        {"role": "user", "content": text},
                     ],
                     max_tokens=1000,
-                    temperature=self.temperature
+                    temperature=self.temperature,
                 )
                 response_text = response.choices[0].message.content
-                if response_text and any('\u4e00' <= char <= '\u9fff' for char in response_text):
+                if response_text and any(
+                    "\u4e00" <= char <= "\u9fff" for char in response_text
+                ):
                     return response_text
 
                 logger.warning("翻译未返回有效的中文文本：{}", response_text)

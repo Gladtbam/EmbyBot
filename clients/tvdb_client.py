@@ -1,6 +1,6 @@
 import asyncio
 
-import httpx
+import httpx2
 from loguru import logger
 from pydantic import ValidationError
 
@@ -9,18 +9,15 @@ from models.tvdb import TvdbData, TvdbEpisodesData, TvdbPayload, TvdbSeriesData
 
 
 class TvdbClient(AuthenticatedClient):
-    def __init__(self, client: httpx.AsyncClient, api_key: str) -> None:
+    def __init__(self, client: httpx2.AsyncClient, api_key: str) -> None:
         super().__init__(client)
         self.api_key = api_key
         self._token: str | None = None
         self._limiter = RateLimiter(rate=20, per=1.0)
 
     async def _login(self):
-        payload = {'apikey': self.api_key}
-        headers = {
-            'accept': 'application/json',
-            'Content-Type': 'application/json'
-        }
+        payload = {"apikey": self.api_key}
+        headers = {"accept": "application/json", "Content-Type": "application/json"}
         if self._client is None:
             logger.warning("Tvdb 客户端未初始化。请先调用 login()。")
         response = await self._client.post("login", json=payload, headers=headers)
@@ -39,7 +36,7 @@ class TvdbClient(AuthenticatedClient):
 
         try:
             return await super()._request(*args, **kwargs)
-        except httpx.HTTPStatusError as e:
+        except httpx2.HTTPStatusError as e:
             if e.response.status_code == 404:
                 logger.debug(f"TVDB 资源未找到 (404): {e.request.url}")
                 return None
@@ -58,10 +55,12 @@ class TvdbClient(AuthenticatedClient):
 
     async def _apply_auth(self):
         if self._token:
-            return {'Authorization': f'Bearer {self._token}'}
+            return {"Authorization": f"Bearer {self._token}"}
         return {}
 
-    async def episodes_translations(self, episode_id: int, language: str = 'zho') -> TvdbPayload | None:
+    async def episodes_translations(
+        self, episode_id: int, language: str = "zho"
+    ) -> TvdbPayload | None:
         """获取指定剧集的翻译信息
 
         Args:
@@ -71,8 +70,8 @@ class TvdbClient(AuthenticatedClient):
             TvdbPayload: 包含翻译信息的响应数据"""
         return await self.get(
             f"/episodes/{episode_id}/translations/{language}",
-            headers={'Accept': 'application/json'},
-            response_model=TvdbPayload
+            headers={"Accept": "application/json"},
+            response_model=TvdbPayload,
         )
 
     async def episodes_extended(self, episode_id: int) -> TvdbEpisodesData | None:
@@ -85,15 +84,17 @@ class TvdbClient(AuthenticatedClient):
         """
         response = await self.get(
             f"/episodes/{episode_id}/extended",
-            params={'meta': 'translations'},
-            headers={'Accept': 'application/json'},
-            response_model=TvdbPayload
+            params={"meta": "translations"},
+            headers={"Accept": "application/json"},
+            response_model=TvdbPayload,
         )
         if response is not None and isinstance(response.data, TvdbEpisodesData):
             return response.data
         return None
 
-    async def seasons_translations(self, season_id: int, language: str = 'zho') -> TvdbPayload | None:
+    async def seasons_translations(
+        self, season_id: int, language: str = "zho"
+    ) -> TvdbPayload | None:
         """获取指定季的翻译信息
 
         Args:
@@ -104,8 +105,8 @@ class TvdbClient(AuthenticatedClient):
         """
         return await self.get(
             f"/seasons/{season_id}/translations/{language}",
-            headers={'Accept': 'application/json'},
-            response_model=TvdbPayload
+            headers={"Accept": "application/json"},
+            response_model=TvdbPayload,
         )
 
     async def seasons_extended(self, season_id: int) -> TvdbPayload | None:
@@ -118,11 +119,13 @@ class TvdbClient(AuthenticatedClient):
         """
         return await self.get(
             f"/seasons/{season_id}/extended",
-            headers={'Accept': 'application/json'},
-            response_model=TvdbPayload
+            headers={"Accept": "application/json"},
+            response_model=TvdbPayload,
         )
 
-    async def series_extended(self, series_id: int, meta: str = 'translations') -> TvdbSeriesData | None:
+    async def series_extended(
+        self, series_id: int, meta: str = "translations"
+    ) -> TvdbSeriesData | None:
         """获取指定剧集的扩展信息
 
         Args:
@@ -133,15 +136,17 @@ class TvdbClient(AuthenticatedClient):
         """
         response = await self.get(
             f"/series/{series_id}/extended",
-            params={'meta': f'{meta}'},
-            headers={'Accept': 'application/json'},
-            response_model=TvdbPayload
+            params={"meta": f"{meta}"},
+            headers={"Accept": "application/json"},
+            response_model=TvdbPayload,
         )
         if response is not None and isinstance(response.data, TvdbSeriesData):
             return response.data
         return None
 
-    async def series_translations(self, series_id: int, language: str = 'zho') -> TvdbPayload | None:
+    async def series_translations(
+        self, series_id: int, language: str = "zho"
+    ) -> TvdbPayload | None:
         """获取指定剧集的翻译信息
 
         Args:
@@ -152,6 +157,6 @@ class TvdbClient(AuthenticatedClient):
         """
         return await self.get(
             f"/series/{series_id}/translations/{language}",
-            headers={'Accept': 'application/json'},
-            response_model=TvdbPayload
+            headers={"Accept": "application/json"},
+            response_model=TvdbPayload,
         )

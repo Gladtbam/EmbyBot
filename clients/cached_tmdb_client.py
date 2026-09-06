@@ -1,4 +1,4 @@
-import httpx
+import httpx2
 from loguru import logger
 
 from clients.tmdb_client import TmdbClient
@@ -9,14 +9,14 @@ from services.cache_service import CacheService
 class CachedTmdbClient(TmdbClient):
     """带缓存的 TMDB 客户端"""
 
-    def __init__(self, client: httpx.AsyncClient, api_key: str, cache_ttl: int = 86400 * 7):
+    def __init__(
+        self, client: httpx2.AsyncClient, api_key: str, cache_ttl: int = 86400 * 7
+    ):
         super().__init__(client, api_key)
         self.cache_ttl = cache_ttl  # 默认缓存 7 天
 
     async def find_info_by_external_id(
-        self,
-        external_source: str,
-        external_id: str
+        self, external_source: str, external_id: str
     ) -> TmdbFindPayload | None:
         key = f"tmdb:find:{external_source}:{external_id}"
 
@@ -47,7 +47,9 @@ class CachedTmdbClient(TmdbClient):
 
         return result
 
-    async def get_tv_seasons_details(self, tmdb_id: int, season_number: int) -> TmdbSeason | None:
+    async def get_tv_seasons_details(
+        self, tmdb_id: int, season_number: int
+    ) -> TmdbSeason | None:
         key = f"tmdb:tv:{tmdb_id}:season:{season_number}"
 
         cached = await CacheService.get(key, TmdbSeason)

@@ -2,16 +2,23 @@ import random
 from collections.abc import AsyncGenerator
 from typing import Any
 
-import httpx
+import httpx2
 from loguru import logger
 from pydantic import TypeAdapter
 
 from clients.base_client import AuthenticatedClient
-from models.emby import (BaseItemDto, BaseItemDtoQueryResult,
-                         DevicesDeviceInfo, LibraryMediaFolder,
-                         PublicSystemInfo, QueryResult_VirtualFolderInfo,
-                         SessionInfoDto, UserDto, UserPolicy,
-                         VirtualFolderInfo)
+from models.emby import (
+    BaseItemDto,
+    BaseItemDtoQueryResult,
+    DevicesDeviceInfo,
+    LibraryMediaFolder,
+    PublicSystemInfo,
+    QueryResult_VirtualFolderInfo,
+    SessionInfoDto,
+    UserDto,
+    UserPolicy,
+    VirtualFolderInfo,
+)
 from models.protocols import BaseItem
 from services.media_service import MediaService
 
@@ -20,7 +27,8 @@ class EmbyClient(
     AuthenticatedClient,
     MediaService[
         UserDto, BaseItemDto, VirtualFolderInfo, DevicesDeviceInfo, PublicSystemInfo
-]):
+    ],
+):
     """Emby 客户端
     用于与 Emby 媒体服务器交互。
     继承自 MediaService 抽象基类，提供获取和更新媒体项信息的方法。
@@ -28,15 +36,15 @@ class EmbyClient(
 
     def __init__(
         self,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         api_key: str,
         server_name: str = "Emby",
-        notify_topic_id: int | None = None
+        notify_topic_id: int | None = None,
     ) -> None:
         """初始化 EmbyClient 实例。
 
         Args:
-            client (httpx.AsyncClient): 异步 HTTP 客户端实例。
+            client (httpx2.AsyncClient): 异步 HTTP 客户端实例。
             api_key (str): Emby API 密钥，用于认证请求。
         """
         super().__init__(client)
@@ -52,7 +60,7 @@ class EmbyClient(
         return {
             "X-Emby-Token": self._api_key,
             "accept": "application/json",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
 
     async def create(self, name: str) -> tuple[UserDto | None, str | None]:
@@ -63,7 +71,7 @@ class EmbyClient(
             UserDto: 创建的 Emby 用户对象。
         """
         url = "/Users/New"
-        payload = {'Name': name}
+        payload = {"Name": name}
 
         response = await self.post(url, json=payload, response_model=UserDto)
 
@@ -86,8 +94,9 @@ class EmbyClient(
         url = f"/Users/{user_id}"
         await self.delete(url)
 
-
-    async def update_policy(self, user_id: str, policy: dict[str, Any], is_none: bool = False) -> None:
+    async def update_policy(
+        self, user_id: str, policy: dict[str, Any], is_none: bool = False
+    ) -> None:
         """更新用户策略。
         Args:
             user_id (str): Emby 用户的唯一标识符。
@@ -114,20 +123,40 @@ class EmbyClient(
             BaseItemDto: 媒体项对象，如果未找到则返回 None。
         """
         url = "/Items"
-        fields = ["ProductionYear", "Budget", "Chapters", "DateCreated", "PremiereDate",
-              "Genres", "HomePageUrl", "IndexOptions", "MediaStreams", "Overview",
-              "ParentId", "Path", "People", "ProviderIds", "PrimaryImageAspectRatio",
-              "Revenue", "SortName", "Studios", "Taglines", "CommunityRating",
-              "CriticRating"]
+        fields = [
+            "ProductionYear",
+            "Budget",
+            "Chapters",
+            "DateCreated",
+            "PremiereDate",
+            "Genres",
+            "HomePageUrl",
+            "IndexOptions",
+            "MediaStreams",
+            "Overview",
+            "ParentId",
+            "Path",
+            "People",
+            "ProviderIds",
+            "PrimaryImageAspectRatio",
+            "Revenue",
+            "SortName",
+            "Studios",
+            "Taglines",
+            "CommunityRating",
+            "CriticRating",
+        ]
         params = {
-            'Recursive': 'true',
-            'Fields': ', '.join(fields),
-            'EnableImages': 'true',
-            'EnableUserData': 'true',
-            'Ids': item_id
+            "Recursive": "true",
+            "Fields": ", ".join(fields),
+            "EnableImages": "true",
+            "EnableUserData": "true",
+            "Ids": item_id,
         }
 
-        response = await self.get(url, params=params, response_model=BaseItemDtoQueryResult)
+        response = await self.get(
+            url, params=params, response_model=BaseItemDtoQueryResult
+        )
         if response is None or response.TotalRecordCount == 0 or not response.Items:
             logger.warning("获取 Emby 项目 {} 信息失败: {}", item_id, response)
             return None
@@ -146,7 +175,6 @@ class EmbyClient(
         url = f"/Items/{item_id}"
 
         await self.post(url, json=item_info.model_dump(exclude_unset=True, mode="json"))
-
 
     async def get_user_info(self, user_id: str) -> UserDto | None:
         """获取指定用户的信息。
@@ -167,12 +195,16 @@ class EmbyClient(
             user_id (str): Emby 用户的唯一标识符。
             reset_password (bool): 是否重置密码。如果为 True，则 Emby 会生成一个新密码。
         """
-        passwd = ''.join(random.sample('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=12))
+        passwd = "".join(
+            random.sample(
+                "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", k=12
+            )
+        )
         url = f"/Users/{user_id}/Password"
         payload = {
-            'Id': user_id,
-            'NewPw': passwd if not reset_password else None,
-            'ResetPassword': reset_password
+            "Id": user_id,
+            "NewPw": passwd if not reset_password else None,
+            "ResetPassword": reset_password,
         }
         await self.post(url, json=payload)
         return passwd
@@ -186,16 +218,16 @@ class EmbyClient(
         """
         user: UserDto | None = await self.get_user_info(user_id)
         if user is not None:
-            policy = user.Policy.model_copy(update={'IsDisabled': is_ban}).model_dump()
+            policy = user.Policy.model_copy(update={"IsDisabled": is_ban}).model_dump()
             await self.update_policy(user_id, policy)
         logger.error("获取用户 {} 信息失败，无法进行封禁或解封操作", user_id)
 
     async def get_session_list(self) -> int:
         """获取用户在线数量"""
         url = "/Sessions"
-        response = await self.get(url,
-            parser=lambda data: TypeAdapter(
-                list[SessionInfoDto]).validate_python(data)
+        response = await self.get(
+            url,
+            parser=lambda data: TypeAdapter(list[SessionInfoDto]).validate_python(data),
         )
         if response is None:
             return 0
@@ -215,10 +247,16 @@ class EmbyClient(
     async def get_selectable_media_folders(self) -> list[LibraryMediaFolder] | None:
         """获取 Emby 媒体文件夹"""
         url = "/Library/SelectableMediaFolders"
-        return await self.get(url,
-            parser=lambda data: TypeAdapter(list[LibraryMediaFolder]).validate_python(data))
+        return await self.get(
+            url,
+            parser=lambda data: TypeAdapter(list[LibraryMediaFolder]).validate_python(
+                data
+            ),
+        )
 
-    async def get_user_id_by_device_id(self, device_id: str) -> DevicesDeviceInfo | None:
+    async def get_user_id_by_device_id(
+        self, device_id: str
+    ) -> DevicesDeviceInfo | None:
         """通过设备 ID 获取用户 ID
         Args:
             device_id (str): Emby 用户设备 ID
@@ -226,7 +264,7 @@ class EmbyClient(
             DevicesDeviceInfo | None
         """
         url = "/Devices/Info"
-        params = {'Id': device_id}
+        params = {"Id": device_id}
         return await self.get(url, params=params, response_model=DevicesDeviceInfo)
 
     async def get_system_info_public(self) -> PublicSystemInfo | None:
@@ -244,11 +282,13 @@ class EmbyClient(
         page_size = 200
         while True:
             params = {
-                'Recursive': 'true',
-                'StartIndex': start_index,
-                'Limit': page_size
+                "Recursive": "true",
+                "StartIndex": start_index,
+                "Limit": page_size,
             }
-            response = await self.get(url, params=params, response_model=BaseItemDtoQueryResult)
+            response = await self.get(
+                url, params=params, response_model=BaseItemDtoQueryResult
+            )
             if response is None:
                 break
             items = response.Items

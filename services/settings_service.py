@@ -1,7 +1,7 @@
 import contextlib
 import json
 
-import httpx
+import httpx2
 from fastapi import FastAPI
 from loguru import logger
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -15,8 +15,14 @@ from core.config import get_settings
 from core.telegram_manager import TelethonClientWarper
 from models.emby import LibraryMediaFolder
 from models.orm import ServerInstance, ServerType
-from models.schemas import (ArrServerDto, BindingDto, LibraryDto,
-                            NsfwLibraryDto, QualityProfileDto, RootFolderDto)
+from models.schemas import (
+    ArrServerDto,
+    BindingDto,
+    LibraryDto,
+    NsfwLibraryDto,
+    QualityProfileDto,
+    RootFolderDto,
+)
 from repositories.binding_repo import BindingRepository
 from repositories.config_repo import ConfigRepository
 from repositories.server_repo import ServerRepository
@@ -25,6 +31,7 @@ from services.media_service import MediaService
 from services.user_service import Result
 
 settings = get_settings()
+
 
 class SettingsServices:
     def __init__(self, app: FastAPI, session: AsyncSession) -> None:
@@ -61,11 +68,15 @@ class SettingsServices:
             if user_id in self.app.state.admin_ids:
                 await self.telegram_repo.toggle_admin(user_id, is_admin=False)
                 self.app.state.admin_ids.discard(user_id)
-                return Result(success=True, message=f"已撤销用户 {user_id} 的管理员权限。")
+                return Result(
+                    success=True, message=f"已撤销用户 {user_id} 的管理员权限。"
+                )
             else:
                 await self.telegram_repo.toggle_admin(user_id, is_admin=True)
                 self.app.state.admin_ids.add(user_id)
-                return Result(success=True, message=f"已授予用户 {user_id} 管理员权限。")
+                return Result(
+                    success=True, message=f"已授予用户 {user_id} 管理员权限。"
+                )
         except (ValueError, KeyError) as e:
             return Result(success=False, message=str(e))
 
@@ -96,50 +107,47 @@ class SettingsServices:
 
         if server.server_type == ServerType.EMBY:
             client = EmbyClient(
-                client=httpx.AsyncClient(
+                client=httpx2.AsyncClient(
                     base_url=f"{server.url}/emby",
-                    timeout=httpx.Timeout(10.0, read=30.0)
-                    ),
+                    timeout=httpx2.Timeout(10.0, read=30.0),
+                ),
                 api_key=server.api_key,
                 server_name=server.name,
-                notify_topic_id=server.notify_topic_id
+                notify_topic_id=server.notify_topic_id,
             )
             self.media_clients[server.id] = client
         elif server.server_type == ServerType.JELLYFIN:
             client = JellyfinClient(
-                client=httpx.AsyncClient(
-                    base_url=server.url,
-                    timeout=httpx.Timeout(10.0, read=30.0)
-                    ),
+                client=httpx2.AsyncClient(
+                    base_url=server.url, timeout=httpx2.Timeout(10.0, read=30.0)
+                ),
                 api_key=server.api_key,
                 server_name=server.name,
-                notify_topic_id=server.notify_topic_id
+                notify_topic_id=server.notify_topic_id,
             )
             self.media_clients[server.id] = client
         elif server.server_type == ServerType.SONARR:
             client = SonarrClient(
-                client=httpx.AsyncClient(
-                    base_url=server.url,
-                    timeout=httpx.Timeout(10.0, read=30.0)
-                    ),
+                client=httpx2.AsyncClient(
+                    base_url=server.url, timeout=httpx2.Timeout(10.0, read=30.0)
+                ),
                 api_key=server.api_key,
                 server_name=server.name,
                 path_mappings=mappings,
                 notify_topic_id=server.notify_topic_id,
-                request_notify_topic_id=server.request_notify_topic_id
+                request_notify_topic_id=server.request_notify_topic_id,
             )
             self.sonarr_clients[server.id] = client
         elif server.server_type == ServerType.RADARR:
             client = RadarrClient(
-                client=httpx.AsyncClient(
-                    base_url=server.url,
-                    timeout=httpx.Timeout(10.0, read=30.0)
-                    ),
+                client=httpx2.AsyncClient(
+                    base_url=server.url, timeout=httpx2.Timeout(10.0, read=30.0)
+                ),
                 api_key=server.api_key,
                 server_name=server.name,
                 path_mappings=mappings,
                 notify_topic_id=server.notify_topic_id,
-                request_notify_topic_id=server.request_notify_topic_id
+                request_notify_topic_id=server.request_notify_topic_id,
             )
             self.radarr_clients[server.id] = client
 
@@ -157,7 +165,7 @@ class SettingsServices:
             client = self.radarr_clients.pop(server.id, None)
 
         if client:
-            await client.close() # type: ignore
+            await client.close()  # type: ignore
 
     async def _reload_server_client(self, server: ServerInstance):
         """(内部) 重载客户端"""
@@ -181,7 +189,11 @@ class SettingsServices:
         for lib in libraries:
             lib_name = lib.Name
             # Emby uses Guid, Jellyfin uses ItemId (sometimes Id in API response)
-            lib_id = getattr(lib, 'ItemId', None) or getattr(lib, 'Guid', None) or getattr(lib, 'Id', None)
+            lib_id = (
+                getattr(lib, "ItemId", None)
+                or getattr(lib, "Guid", None)
+                or getattr(lib, "Id", None)
+            )
 
             dto = LibraryDto(name=lib_name, id=lib_id)
 
@@ -194,7 +206,7 @@ class SettingsServices:
                     arr_name=arr_server.name if arr_server else "Unknown",
                     arr_type=arr_server.server_type if arr_server else "unknown",
                     quality_profile_id=binding.quality_profile_id,
-                    root_folder=binding.root_folder
+                    root_folder=binding.root_folder,
                 )
             result.append(dto)
 
@@ -204,14 +216,18 @@ class SettingsServices:
         """获取所有 Sonarr/Radarr 实例 (API)"""
         servers = []
         for s in await self.server_repo.get_by_type(ServerType.SONARR):
-            servers.append(ArrServerDto(id=s.id, name=s.name, type='sonarr'))
+            servers.append(ArrServerDto(id=s.id, name=s.name, type="sonarr"))
         for r in await self.server_repo.get_by_type(ServerType.RADARR):
-            servers.append(ArrServerDto(id=r.id, name=r.name, type='radarr'))
+            servers.append(ArrServerDto(id=r.id, name=r.name, type="radarr"))
         return servers
 
-    async def get_arr_resources(self, server_id: int) -> tuple[list[QualityProfileDto], list[RootFolderDto]]:
+    async def get_arr_resources(
+        self, server_id: int
+    ) -> tuple[list[QualityProfileDto], list[RootFolderDto]]:
         """获取 Sonarr/Radarr 的资源 (API)"""
-        client = self.sonarr_clients.get(server_id) or self.radarr_clients.get(server_id)
+        client = self.sonarr_clients.get(server_id) or self.radarr_clients.get(
+            server_id
+        )
         if not client:
             raise ValueError("Server instance not found")
 
@@ -219,11 +235,22 @@ class SettingsServices:
         folders = await client.get_root_folders() or []
 
         p_dtos = [QualityProfileDto(id=p.id, name=p.name) for p in profiles]
-        f_dtos = [RootFolderDto(id=f.id, path=f.path, freeSpace=f.freeSpace) for f in folders if f.path]
+        f_dtos = [
+            RootFolderDto(id=f.id, path=f.path, freeSpace=f.freeSpace)
+            for f in folders
+            if f.path
+        ]
 
         return p_dtos, f_dtos
 
-    async def save_library_binding(self, library_name: str, media_server_id: int, arr_server_id: int, quality_id: int, root_folder: str) -> None:
+    async def save_library_binding(
+        self,
+        library_name: str,
+        media_server_id: int,
+        arr_server_id: int,
+        quality_id: int,
+        root_folder: str,
+    ) -> None:
         """保存媒体库绑定 (API)"""
         arr_server = await self.server_repo.get_by_id(arr_server_id)
         if not arr_server:
@@ -263,19 +290,27 @@ class SettingsServices:
         libraries = await client.get_libraries() or []
 
         # 解析当前已存储的 NSFW ID 列表
-        current_ids = set(server.nsfw_library_ids.split('|')) if server.nsfw_library_ids else set()
+        current_ids = (
+            set(server.nsfw_library_ids.split("|"))
+            if server.nsfw_library_ids
+            else set()
+        )
 
         result = []
         for lib in libraries:
-            lib_id = getattr(lib, 'ItemId', None) or getattr(lib, 'Guid', None) or getattr(lib, 'Id', None)
+            lib_id = (
+                getattr(lib, "ItemId", None)
+                or getattr(lib, "Guid", None)
+                or getattr(lib, "Id", None)
+            )
             if not lib_id:
                 continue
 
-            result.append(NsfwLibraryDto(
-                id=lib_id,
-                name=lib.Name,
-                is_nsfw=(lib_id in current_ids)
-            ))
+            result.append(
+                NsfwLibraryDto(
+                    id=lib_id, name=lib.Name, is_nsfw=(lib_id in current_ids)
+                )
+            )
         return result
 
     async def toggle_nsfw_library(self, server_id: int, lib_id: str) -> Result:
@@ -289,8 +324,16 @@ class SettingsServices:
             return Result(False, "客户端未运行")
 
         is_emby = server.server_type == ServerType.EMBY
-        nsfw_ids = {i for i in server.nsfw_library_ids.split('|') if i} if server.nsfw_library_ids else set()
-        nsfw_sub_ids = {i for i in server.nsfw_sub_library_ids.split('|') if i} if server.nsfw_sub_library_ids else set()
+        nsfw_ids = (
+            {i for i in server.nsfw_library_ids.split("|") if i}
+            if server.nsfw_library_ids
+            else set()
+        )
+        nsfw_sub_ids = (
+            {i for i in server.nsfw_sub_library_ids.split("|") if i}
+            if server.nsfw_sub_library_ids
+            else set()
+        )
 
         sub_folders: list[LibraryMediaFolder] | None = None
 
@@ -300,27 +343,39 @@ class SettingsServices:
         if lib_id in nsfw_ids:
             nsfw_ids.remove(lib_id)
             if is_emby:
-                nsfw_sub_ids = {sub_id for sub_id in nsfw_sub_ids if not sub_id.startswith(f"{lib_id}_")}
+                nsfw_sub_ids = {
+                    sub_id
+                    for sub_id in nsfw_sub_ids
+                    if not sub_id.startswith(f"{lib_id}_")
+                }
             action = "移除"
         else:
             nsfw_ids.add(lib_id)
             if is_emby and sub_folders:
                 for folder in sub_folders:
                     if folder.Guid == lib_id:
-                        nsfw_sub_ids.update(f"{lib_id}_{sub.Id}" for sub in folder.SubFolders)
+                        nsfw_sub_ids.update(
+                            f"{lib_id}_{sub.Id}" for sub in folder.SubFolders
+                        )
             action = "添加"
 
-        await self.server_repo.update_nsfw_config(server_id, lib_ids='|'.join(nsfw_ids))
+        await self.server_repo.update_nsfw_config(server_id, lib_ids="|".join(nsfw_ids))
         if is_emby:
-            await self.server_repo.update_nsfw_config(server_id, sub_lib_ids='|'.join(nsfw_sub_ids))
+            await self.server_repo.update_nsfw_config(
+                server_id, sub_lib_ids="|".join(nsfw_sub_ids)
+            )
 
         return Result(success=True, message=f"已{action}该媒体库。")
 
-    async def add_server(self, name: str, server_type: str, url: str, api_key: str) -> Result:
+    async def add_server(
+        self, name: str, server_type: str, url: str, api_key: str
+    ) -> Result:
         """添加新服务器并初始化客户端"""
         try:
             # 默认优先级设为 0
-            instance = await self.server_repo.add(name, server_type, url, api_key, priority=0)
+            instance = await self.server_repo.add(
+                name, server_type, url, api_key, priority=0
+            )
         except IntegrityError:
             return Result(False, "服务器名称已存在，请勿重复添加。")
         except SQLAlchemyError as e:
@@ -332,21 +387,23 @@ class SettingsServices:
         try:
             new_client = None
             if server_type == ServerType.EMBY:
-                new_client = EmbyClient(httpx.AsyncClient(base_url=f"{url}/emby"), api_key)
+                new_client = EmbyClient(
+                    httpx2.AsyncClient(base_url=f"{url}/emby"), api_key
+                )
                 self.media_clients[instance.id] = new_client
             elif server_type == ServerType.JELLYFIN:
-                new_client = JellyfinClient(httpx.AsyncClient(base_url=url), api_key)
+                new_client = JellyfinClient(httpx2.AsyncClient(base_url=url), api_key)
                 self.media_clients[instance.id] = new_client
             elif server_type == ServerType.SONARR:
-                new_client = SonarrClient(httpx.AsyncClient(base_url=url), api_key)
+                new_client = SonarrClient(httpx2.AsyncClient(base_url=url), api_key)
                 self.sonarr_clients[instance.id] = new_client
             elif server_type == ServerType.RADARR:
-                new_client = RadarrClient(httpx.AsyncClient(base_url=url), api_key)
+                new_client = RadarrClient(httpx2.AsyncClient(base_url=url), api_key)
                 self.radarr_clients[instance.id] = new_client
 
             return Result(True, f"✅ 服务器 **{name}** 添加成功并已上线！")
 
-        except httpx.HTTPError as e:
+        except httpx2.HTTPError as e:
             # 初始化连接失败
             await self.server_repo.delete(instance.id)
             return Result(False, f"❌ 连接服务器失败 (已回滚): {e}")

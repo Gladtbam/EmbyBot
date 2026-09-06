@@ -1,6 +1,6 @@
 import json
 
-import httpx
+import httpx2
 from loguru import logger
 
 from clients.base_client import AuthenticatedClient
@@ -8,7 +8,13 @@ from models.qbittorrent import BuildInfo, Preference, TorrentProperties
 
 
 class QbittorrentClient(AuthenticatedClient):
-    def __init__(self, client: httpx.AsyncClient, username: str | None, password: str | None, api_key: str | None):
+    def __init__(
+        self,
+        client: httpx2.AsyncClient,
+        username: str | None,
+        password: str | None,
+        api_key: str | None,
+    ):
         super().__init__(client)
         self.username = username
         self.password = password
@@ -18,10 +24,7 @@ class QbittorrentClient(AuthenticatedClient):
         if self.api_key:
             self._is_logged_in = True
             return
-        data = {
-            'username': self.username,
-            'password': self.password
-        }
+        data = {"username": self.username, "password": self.password}
         if self._client is None:
             logger.warning("Qbittorrent 客户端未初始化。请先调用 login()。")
         response = await self._client.post("/api/v2/auth/login", data=data)
@@ -30,18 +33,18 @@ class QbittorrentClient(AuthenticatedClient):
 
     async def _apply_auth(self) -> dict:
         if self.api_key:
-            return { 'Authorization': f'Bearer {self.api_key}' }
+            return {"Authorization": f"Bearer {self.api_key}"}
         return {}
 
     async def app_version(self):
         """获取 qBittorrent 的版本信息"""
         response = await self.get("/api/v2/app/version", raw=True)
-        return tuple(map(int, response.text.strip('vV').split('.')))
+        return tuple(map(int, response.text.strip("vV").split(".")))
 
     async def app_webapi_version(self):
         """获取 qBittorrent Web API 的版本信息"""
         response = await self.get("/api/v2/app/webapiVersion", raw=True)
-        return tuple(map(int, response.text.split('.')))
+        return tuple(map(int, response.text.split(".")))
 
     async def app_build_info(self) -> BuildInfo | None:
         """获取 qBittorrent 的构建信息"""
@@ -60,14 +63,16 @@ class QbittorrentClient(AuthenticatedClient):
         payload = preferences.model_dump(exclude_unset=True)
         if not payload:
             raise ValueError("无设置首选项设置")
-        data = {'json': json.dumps(payload)}
+        data = {"json": json.dumps(payload)}
         await self.post("/api/v2/app/setPreferences", data=data)
 
     async def torrents_properties(self, torrent_hash: str) -> TorrentProperties | None:
         """获取指定 torrent 的属性"""
-        return await self.get("/api/v2/torrents/properties",
-                                  params={'hash': torrent_hash},
-                                  response_model=TorrentProperties)
+        return await self.get(
+            "/api/v2/torrents/properties",
+            params={"hash": torrent_hash},
+            response_model=TorrentProperties,
+        )
 
     async def torrents_stop(self, torrent_hash: list[str] | str) -> None:
         """停止指定的 torrent"""
@@ -77,7 +82,7 @@ class QbittorrentClient(AuthenticatedClient):
         hashes = [torrent_hash] if isinstance(torrent_hash, str) else torrent_hash
         if not all(isinstance(h, str) for h in hashes):
             raise ValueError("torrent 哈希值必须是字符串")
-        params = {'hashes': '|'.join(hashes)}
+        params = {"hashes": "|".join(hashes)}
         await self.post("/api/v2/torrents/stop", params=params)
 
     async def torrents_start(self, torrent_hash: list[str] | str) -> None:
@@ -88,10 +93,12 @@ class QbittorrentClient(AuthenticatedClient):
         hashes = [torrent_hash] if isinstance(torrent_hash, str) else torrent_hash
         if not all(isinstance(h, str) for h in hashes):
             raise ValueError("torrent 哈希值必须是字符串")
-        params = {'hashes': '|'.join(hashes)}
+        params = {"hashes": "|".join(hashes)}
         await self.post("/api/v2/torrents/start", params=params)
 
-    async def torrents_delete(self, torrent_hash: list[str] | str, delete_files: bool = False) -> None:
+    async def torrents_delete(
+        self, torrent_hash: list[str] | str, delete_files: bool = False
+    ) -> None:
         """删除指定的 torrent"""
         if not torrent_hash:
             raise ValueError("请提供 torrent 哈希值")
@@ -99,10 +106,15 @@ class QbittorrentClient(AuthenticatedClient):
         hashes = [torrent_hash] if isinstance(torrent_hash, str) else torrent_hash
         if not all(isinstance(h, str) for h in hashes):
             raise ValueError("torrent 哈希值必须是字符串")
-        params = {'hashes': '|'.join(hashes), 'deleteFiles': 'true' if delete_files else 'false'}
+        params = {
+            "hashes": "|".join(hashes),
+            "deleteFiles": "true" if delete_files else "false",
+        }
         await self.post("/api/v2/torrents/delete", params=params)
 
-    async def torrents_download_limit(self, torrent_hash: list[str] | str) -> dict[str, int] | None:
+    async def torrents_download_limit(
+        self, torrent_hash: list[str] | str
+    ) -> dict[str, int] | None:
         """获取指定 torrent 的下载限速"""
         if not torrent_hash:
             raise ValueError("请提供 torrent 哈希值")
@@ -110,11 +122,15 @@ class QbittorrentClient(AuthenticatedClient):
         hashes = [torrent_hash] if isinstance(torrent_hash, str) else torrent_hash
         if not all(isinstance(h, str) for h in hashes):
             raise ValueError("torrent 哈希值必须是字符串")
-        params = {'hashes': '|'.join(hashes)}
-        response = await self.get("/api/v2/torrents/downloadLimit", params=params, raw=True)
+        params = {"hashes": "|".join(hashes)}
+        response = await self.get(
+            "/api/v2/torrents/downloadLimit", params=params, raw=True
+        )
         return response.json() if response else None
 
-    async def torrents_set_download_limit(self, torrent_hash: list[str] | str, limit: int) -> None:
+    async def torrents_set_download_limit(
+        self, torrent_hash: list[str] | str, limit: int
+    ) -> None:
         """设置指定 torrent 的下载限速"""
         if not torrent_hash:
             raise ValueError("请提供 torrent 哈希值")
@@ -124,7 +140,7 @@ class QbittorrentClient(AuthenticatedClient):
             raise ValueError("torrent 哈希值必须是字符串")
         if not isinstance(limit, int) or limit < 0:
             raise ValueError("下载限制必须是非负整数")
-        params = {'hashes': '|'.join(hashes), 'limit': limit}
+        params = {"hashes": "|".join(hashes), "limit": limit}
         await self.post("/api/v2/torrents/setDownloadLimit", params=params)
 
     async def torrents_set_share_limits(
@@ -132,7 +148,8 @@ class QbittorrentClient(AuthenticatedClient):
         torrent_hash: list[str] | str,
         ratio_limit: float = -2.0,
         seeding_time_limit: int = -2,
-        inactive_seeding_time_limit: int = -2) -> None:
+        inactive_seeding_time_limit: int = -2,
+    ) -> None:
         """设置指定 torrent 的分享限制"""
         if not torrent_hash:
             raise ValueError("请提供 torrent 哈希值")
@@ -141,21 +158,24 @@ class QbittorrentClient(AuthenticatedClient):
         if not all(isinstance(h, str) for h in hashes):
             raise ValueError("torrent 哈希值必须是字符串")
 
-        if getattr(self, '_app_version', None) is None:
+        if getattr(self, "_app_version", None) is None:
             self._app_version = await self.app_version()
 
         app_version = self._app_version
 
         data = {
-            'hashes': '|'.join(hashes),
-            'ratioLimit': ratio_limit if ratio_limit is not None else '',
-            'seedingTimeLimit': seeding_time_limit if seeding_time_limit is not None else '',
-            'inactiveSeedingTimeLimit': inactive_seeding_time_limit if inactive_seeding_time_limit is not None else ''
+            "hashes": "|".join(hashes),
+            "ratioLimit": ratio_limit if ratio_limit is not None else "",
+            "seedingTimeLimit": (
+                seeding_time_limit if seeding_time_limit is not None else ""
+            ),
+            "inactiveSeedingTimeLimit": (
+                inactive_seeding_time_limit
+                if inactive_seeding_time_limit is not None
+                else ""
+            ),
         }
 
         if app_version >= (5, 2, 0):
-            data.update({
-                'shareLimitsMode': -1,
-                'shareLimitAction': -1
-            })
+            data.update({"shareLimitsMode": -1, "shareLimitAction": -1})
         await self.post("/api/v2/torrents/setShareLimits", data=data)

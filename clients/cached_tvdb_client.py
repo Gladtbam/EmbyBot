@@ -1,4 +1,4 @@
-import httpx
+import httpx2
 from loguru import logger
 
 from clients.tvdb_client import TvdbClient
@@ -9,11 +9,15 @@ from services.cache_service import CacheService
 class CachedTvdbClient(TvdbClient):
     """带缓存的 TVDB 客户端"""
 
-    def __init__(self, client: httpx.AsyncClient, api_key: str, cache_ttl: int = 86400 * 7):
+    def __init__(
+        self, client: httpx2.AsyncClient, api_key: str, cache_ttl: int = 86400 * 7
+    ):
         super().__init__(client, api_key)
         self.cache_ttl = cache_ttl  # 默认缓存 7 天
 
-    async def episodes_translations(self, episode_id: int, language: str = 'zho') -> TvdbPayload | None:
+    async def episodes_translations(
+        self, episode_id: int, language: str = "zho"
+    ) -> TvdbPayload | None:
         key = f"tvdb:episode:{episode_id}:translations:{language}"
 
         cached = await CacheService.get(key, TvdbPayload)
@@ -43,7 +47,9 @@ class CachedTvdbClient(TvdbClient):
 
         return result
 
-    async def seasons_translations(self, season_id: int, language: str = 'zho') -> TvdbPayload | None:
+    async def seasons_translations(
+        self, season_id: int, language: str = "zho"
+    ) -> TvdbPayload | None:
         key = f"tvdb:season:{season_id}:translations:{language}"
 
         cached = await CacheService.get(key, TvdbPayload)
@@ -73,7 +79,9 @@ class CachedTvdbClient(TvdbClient):
 
         return result
 
-    async def series_extended(self, series_id: int, meta: str = 'translations') -> TvdbSeriesData | None:
+    async def series_extended(
+        self, series_id: int, meta: str = "translations"
+    ) -> TvdbSeriesData | None:
         key = f"tvdb:series:{series_id}:extended:{meta}"
 
         cached = await CacheService.get(key, TvdbSeriesData)
@@ -88,7 +96,9 @@ class CachedTvdbClient(TvdbClient):
 
         return result
 
-    async def series_translations(self, series_id: int, language: str = 'zho') -> TvdbPayload | None:
+    async def series_translations(
+        self, series_id: int, language: str = "zho"
+    ) -> TvdbPayload | None:
         key = f"tvdb:series:{series_id}:translations:{language}"
 
         cached = await CacheService.get(key, TvdbPayload)

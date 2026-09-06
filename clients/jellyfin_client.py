@@ -2,14 +2,21 @@ import random
 from collections.abc import AsyncGenerator
 from typing import Any
 
-import httpx
+import httpx2
 from loguru import logger
 from pydantic import TypeAdapter
 
 from clients.base_client import AuthenticatedClient
-from models.jellyfin import (BaseItemDto, BaseItemDtoQueryResult,
-                             DeviceInfoDto, PublicSystemInfo, SessionInfoDto,
-                             UserDto, UserPolicy, VirtualFolderInfo)
+from models.jellyfin import (
+    BaseItemDto,
+    BaseItemDtoQueryResult,
+    DeviceInfoDto,
+    PublicSystemInfo,
+    SessionInfoDto,
+    UserDto,
+    UserPolicy,
+    VirtualFolderInfo,
+)
 from models.protocols import BaseItem
 from services.media_service import MediaService
 
@@ -18,7 +25,8 @@ class JellyfinClient(
     AuthenticatedClient,
     MediaService[
         UserDto, BaseItemDto, VirtualFolderInfo, DeviceInfoDto, PublicSystemInfo
-]):
+    ],
+):
     """Jellyfin 客户端
     用于与 Jellyfin 媒体服务器交互。
     继承自 MediaService 抽象基类，提供获取和更新媒体项信息的方法。
@@ -26,15 +34,15 @@ class JellyfinClient(
 
     def __init__(
         self,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         api_key: str,
         server_name: str = "Jellyfin",
-        notify_topic_id: int | None = None
+        notify_topic_id: int | None = None,
     ) -> None:
         """初始化 JellyfinClient 实例。
 
         Args:
-            client (httpx.AsyncClient): 异步 HTTP 客户端实例。
+            client (httpx2.AsyncClient): 异步 HTTP 客户端实例。
             api_key (str): Jellyfin API 密钥，用于认证请求。
         """
         super().__init__(client)
@@ -50,7 +58,7 @@ class JellyfinClient(
         return {
             "Authorization": f"MediaBrowser Token={self._api_key}",
             "accept": "application/json",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
 
     async def create(self, name: str) -> tuple[UserDto | None, str | None]:
@@ -61,8 +69,12 @@ class JellyfinClient(
             User: 创建的 Jellyfin 用户对象。
         """
         url = "/Users/New"
-        pw = ''.join(random.sample('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=12))
-        payload = {'Name': name, 'Password': pw}
+        pw = "".join(
+            random.sample(
+                "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", k=12
+            )
+        )
+        payload = {"Name": name, "Password": pw}
 
         response = await self.post(url, json=payload, response_model=UserDto)
         if response is None:
@@ -72,7 +84,7 @@ class JellyfinClient(
         logger.info("创建用户 {} 成功", name)
         return response, pw
 
-    async def delete_user(self, user_id: str) ->None:
+    async def delete_user(self, user_id: str) -> None:
         """删除用户。
         Args:
             user_id (str): Jellyfin 用户的唯一标识符。
@@ -80,7 +92,9 @@ class JellyfinClient(
         url = f"/Users/{user_id}"
         await self.delete(url)
 
-    async def update_policy(self, user_id: str, policy: dict[str, Any], is_none: bool = False) -> None:
+    async def update_policy(
+        self, user_id: str, policy: dict[str, Any], is_none: bool = False
+    ) -> None:
         """更新用户策略。
         Args:
             user_id (str): Jellyfin 用户的唯一标识符。
@@ -105,23 +119,67 @@ class JellyfinClient(
             BaseItemDto: 媒体项对象，如果未找到则返回 None。
         """
         url = "/Items"
-        fields = ["AirTime", "CanDelete", "CanDownload", "ChannelInfo", "Chapters", "Trickplay",
-            "ChildCount", "CumulativeRunTimeTicks", "CustomRating", "DateCreated", "DateLastMediaAdded",
-            "DisplayPreferencesId", "Etag", "ExternalUrls", "Genres", "ItemCounts", "MediaSourceCount",
-            "MediaSources", "OriginalTitle", "Overview", "ParentId", "Path", "People", "PlayAccess",
-            "ProductionLocations", "ProviderIds", "PrimaryImageAspectRatio", "RecursiveItemCount", "Settings",
-            "SeriesStudio", "SortName", "SpecialEpisodeNumbers", "Studios", "Taglines", "Tags", "RemoteTrailers",
-            "MediaStreams", "SeasonUserData", "DateLastRefreshed", "DateLastSaved", "RefreshState", "ChannelImage",
-            "EnableMediaSourceDisplay", "Width", "Height", "ExtraIds", "LocalTrailerCount", "IsHD",
-            "SpecialFeatureCount"]
+        fields = [
+            "AirTime",
+            "CanDelete",
+            "CanDownload",
+            "ChannelInfo",
+            "Chapters",
+            "Trickplay",
+            "ChildCount",
+            "CumulativeRunTimeTicks",
+            "CustomRating",
+            "DateCreated",
+            "DateLastMediaAdded",
+            "DisplayPreferencesId",
+            "Etag",
+            "ExternalUrls",
+            "Genres",
+            "ItemCounts",
+            "MediaSourceCount",
+            "MediaSources",
+            "OriginalTitle",
+            "Overview",
+            "ParentId",
+            "Path",
+            "People",
+            "PlayAccess",
+            "ProductionLocations",
+            "ProviderIds",
+            "PrimaryImageAspectRatio",
+            "RecursiveItemCount",
+            "Settings",
+            "SeriesStudio",
+            "SortName",
+            "SpecialEpisodeNumbers",
+            "Studios",
+            "Taglines",
+            "Tags",
+            "RemoteTrailers",
+            "MediaStreams",
+            "SeasonUserData",
+            "DateLastRefreshed",
+            "DateLastSaved",
+            "RefreshState",
+            "ChannelImage",
+            "EnableMediaSourceDisplay",
+            "Width",
+            "Height",
+            "ExtraIds",
+            "LocalTrailerCount",
+            "IsHD",
+            "SpecialFeatureCount",
+        ]
         params = {
-            'recursive': 'true',
-            'fields': ', '.join(fields),
-            'enableImages': 'true',
-            'enableUserData': 'true',
-            'ids': item_id
+            "recursive": "true",
+            "fields": ", ".join(fields),
+            "enableImages": "true",
+            "enableUserData": "true",
+            "ids": item_id,
         }
-        response = await self.get(url, params=params, response_model=BaseItemDtoQueryResult)
+        response = await self.get(
+            url, params=params, response_model=BaseItemDtoQueryResult
+        )
         if response is None or response.TotalRecordCount == 0 or not response.Items:
             logger.warning("获取 Jellyfin 项目 {} 信息失败: {}", item_id, response)
             return None
@@ -156,13 +214,14 @@ class JellyfinClient(
         Returns:
             str: 新密码，如果更新失败则返回 None。
         """
-        passwd = ''.join(random.sample('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=12))
+        passwd = "".join(
+            random.sample(
+                "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", k=12
+            )
+        )
         url = "/Users/Password"
-        params = {'userId': user_id}
-        payload = {
-            'NewPw': passwd,
-            'ResetPassword': reset_password
-        }
+        params = {"userId": user_id}
+        payload = {"NewPw": passwd, "ResetPassword": reset_password}
         await self.post(url, params=params, json=payload)
         return passwd
 
@@ -174,7 +233,7 @@ class JellyfinClient(
         """
         user = await self.get_user_info(user_id)
         if user is not None:
-            policy = user.Policy.model_copy(update={'IsDisabled': is_ban}).model_dump()
+            policy = user.Policy.model_copy(update={"IsDisabled": is_ban}).model_dump()
             await self.update_policy(user_id, policy)
         else:
             logger.error("获取用户 {} 信息失败，无法进行封禁或解封操作", user_id)
@@ -185,9 +244,10 @@ class JellyfinClient(
             int: 在线用户数量。
         """
         url = "/Sessions"
-        response = await self.get(url,
-            parser=lambda data: TypeAdapter(
-                list[SessionInfoDto]).validate_python(data))
+        response = await self.get(
+            url,
+            parser=lambda data: TypeAdapter(list[SessionInfoDto]).validate_python(data),
+        )
         if response is None:
             return 0
         return len([session for session in response if session.NowPlayingItem])
@@ -198,8 +258,12 @@ class JellyfinClient(
             list[VirtualFolderInfo] | None: 返回媒体库信息的列表，如果查询失败则返回 None。
         """
         url = "/Library/VirtualFolders"
-        response = await self.get(url,
-            parser=lambda data: TypeAdapter(list[VirtualFolderInfo]).validate_python(data))
+        response = await self.get(
+            url,
+            parser=lambda data: TypeAdapter(list[VirtualFolderInfo]).validate_python(
+                data
+            ),
+        )
         if response is None:
             return None
         return response
@@ -215,7 +279,7 @@ class JellyfinClient(
             DeviceInfoDto | None
         """
         url = "/Devices/Info"
-        params = {'id': device_id}
+        params = {"id": device_id}
         return await self.get(url, params=params, response_model=DeviceInfoDto)
 
     async def get_system_info_public(self) -> PublicSystemInfo | None:
@@ -233,11 +297,13 @@ class JellyfinClient(
         page_size = 200
         while True:
             params = {
-                'recursive': 'true',
-                'startIndex': start_index,
-                'limit': page_size
+                "recursive": "true",
+                "startIndex": start_index,
+                "limit": page_size,
             }
-            response = await self.get(url, params=params, response_model=BaseItemDtoQueryResult)
+            response = await self.get(
+                url, params=params, response_model=BaseItemDtoQueryResult
+            )
             if response is None:
                 break
             items = response.Items

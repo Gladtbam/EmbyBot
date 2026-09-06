@@ -6,9 +6,8 @@ from pathlib import Path
 from loguru import logger
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+LOGS_DIR = Path(__file__).parent.parent / "logs"
 
-
-LOGS_DIR = Path(__file__).parent.parent / 'logs'
 
 def setup_logging():
     settings = get_settings()
@@ -26,9 +25,9 @@ def setup_logging():
         level=settings.log_level.upper(),
         filter=console_filter,
         format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
-               "<level>{level: <8}</level> | "
-               "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
-        colorize=True
+        "<level>{level: <8}</level> | "
+        "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
+        colorize=True,
     )
 
     logger.add(
@@ -42,66 +41,79 @@ def setup_logging():
         encoding="utf-8",
         enqueue=True,  # 异步写日志，防止阻塞主线程
         backtrace=True,  # 启用堆栈追踪，方便调试
-        diagnose=True  # 启用诊断信息，帮助识别日志记录中的问题
+        diagnose=True,  # 启用诊断信息，帮助识别日志记录中的问题
     )
 
     class InterceptHandler(logging.Handler):
         def emit(self, record):
             # 获取 Loguru 的日志级别
-            level = logger.level(record.levelname).name if record.levelname else record.levelno
+            level = (
+                logger.level(record.levelname).name
+                if record.levelname
+                else record.levelno
+            )
             # 找到调用日志的堆栈深度
             frame, depth = logging.currentframe(), 2
             while frame and frame.f_code.co_filename == logging.__file__:
                 frame = frame.f_back
                 depth += 1
-            logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
+            logger.opt(depth=depth, exception=record.exc_info).log(
+                level, record.getMessage()
+            )
 
-    logging.getLogger("httpx").setLevel(logging.WARNING)
-    logging.getLogger("httpcore").setLevel(logging.WARNING)
+    logging.getLogger("httpx2").setLevel(logging.WARNING)
+    logging.getLogger("httpcore2").setLevel(logging.WARNING)
 
     logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
-    loggers_to_silence = ["uvicorn", "uvicorn.access", "uvicorn.error", "fastapi", "httpx"]
+    loggers_to_silence = [
+        "uvicorn",
+        "uvicorn.access",
+        "uvicorn.error",
+        "fastapi",
+        "httpx2",
+    ]
     for log_name in loggers_to_silence:
         _logger = logging.getLogger(log_name)
         _logger.handlers = [InterceptHandler()]
         _logger.propagate = False
 
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file='.env',
-        env_file_encoding='utf-8',
-        extra='ignore'
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )
 
-    log_level: str = 'INFO'
-    timezone: str = 'Asia/Shanghai'
+    log_level: str = "INFO"
+    timezone: str = "Asia/Shanghai"
     port: int = 5080
-    proxy: str = ''
-    tmdb_api_key: str = ''
-    tvdb_api_key: str = ''
-    ai_api_key: str = ''
-    ai_base_url: str = 'https://api.openai.com/v1'
-    ai_model: str = 'gpt-4o-mini'
+    proxy: str = ""
+    tmdb_api_key: str = ""
+    tvdb_api_key: str = ""
+    ai_api_key: str = ""
+    ai_base_url: str = "https://api.openai.com/v1"
+    ai_model: str = "gpt-4o-mini"
     ai_temperature: float = 1.3
     ai_rpm: int | None = 60
     ai_rpd: int | None = None
     ai_tpm: int | None = None
     ai_concurrency: int = 1
-    qbittorrent_base_url: str = ''
-    qbittorrent_username: str = ''
-    qbittorrent_password: str = ''
-    qbiitorrent_api_key: str = ''
+    qbittorrent_base_url: str = ""
+    qbittorrent_username: str = ""
+    qbittorrent_password: str = ""
+    qbiitorrent_api_key: str = ""
     qbittorrent_torrent_limit: int = 43200
     telegram_api_id: int = 0
-    telegram_api_hash: str = ''
-    telegram_bot_token: str = ''
-    telegram_bot_name: str = ''
+    telegram_api_hash: str = ""
+    telegram_bot_token: str = ""
+    telegram_bot_name: str = ""
     telegram_chat_id: int = 0
-    telegram_webapp_url: str = ''
+    telegram_webapp_url: str = ""
+
 
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
+
 
 genre_mapping = {
     10759: "动作冒险",
@@ -131,32 +143,32 @@ genre_mapping = {
     10770: "电视电影",
     53: "惊悚",
     10752: "战争",
-    'Action & Adventure': '动作冒险',
-    'Action': '动作',
-    'Adventure': '冒险',
-    'Animation': '动画',
-    'Anime': '动漫',
-    'Awards Show': '颁奖典礼',
-    'Children': '儿童',
-    'Comedy': '喜剧',
-    'Crime': '犯罪',
-    'Documentary': '纪录片',
-    'Drama': '剧情',
-    'Family': '家庭',
-    'Kids': '儿童',
-    'Mystery': '悬疑',
-    'News': '新闻',
-    'Reality': '真人秀',
-    'Sci-Fi & Fantasy': '科幻奇幻',
-    'Sci-Fi': '科幻',
-    'Fantasy': '奇幻',
-    'Soap': '肥皂剧',
-    'Talk': '脱口秀',
-    'War & Politics': '战争与政治',
-    'Western': '西部',
-    'Horror': '恐怖',
-    'Romance': '爱情',
-    'History': '历史',
-    'Music': '音乐',
-    'Thriller': '惊悚'
+    "Action & Adventure": "动作冒险",
+    "Action": "动作",
+    "Adventure": "冒险",
+    "Animation": "动画",
+    "Anime": "动漫",
+    "Awards Show": "颁奖典礼",
+    "Children": "儿童",
+    "Comedy": "喜剧",
+    "Crime": "犯罪",
+    "Documentary": "纪录片",
+    "Drama": "剧情",
+    "Family": "家庭",
+    "Kids": "儿童",
+    "Mystery": "悬疑",
+    "News": "新闻",
+    "Reality": "真人秀",
+    "Sci-Fi & Fantasy": "科幻奇幻",
+    "Sci-Fi": "科幻",
+    "Fantasy": "奇幻",
+    "Soap": "肥皂剧",
+    "Talk": "脱口秀",
+    "War & Politics": "战争与政治",
+    "Western": "西部",
+    "Horror": "恐怖",
+    "Romance": "爱情",
+    "History": "历史",
+    "Music": "音乐",
+    "Thriller": "惊悚",
 }

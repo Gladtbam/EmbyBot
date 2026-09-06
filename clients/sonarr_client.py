@@ -1,6 +1,6 @@
 from collections.abc import AsyncGenerator
 
-import httpx
+import httpx2
 from pydantic import TypeAdapter
 
 from clients.base_client import AuthenticatedClient
@@ -10,15 +10,16 @@ from models.sonarr import AddSeriesOptions, EpisodeResource, SeriesResource
 
 setting = get_settings()
 
+
 class SonarrClient(AuthenticatedClient):
     def __init__(
         self,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         api_key: str,
         server_name: str = "Sonarr",
         path_mappings: dict[str, str] | None = None,
         notify_topic_id: int | None = None,
-        request_notify_topic_id: int | None = None
+        request_notify_topic_id: int | None = None,
     ) -> None:
         super().__init__(client)
         self.api_key = api_key
@@ -35,7 +36,7 @@ class SonarrClient(AuthenticatedClient):
         return {
             "X-Api-Key": self.api_key,
             "accept": "application/json",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
 
     def to_local_path(self, remote_path: str | None) -> str | None:
@@ -55,9 +56,12 @@ class SonarrClient(AuthenticatedClient):
             AsyncGenerator[SeriesResource, None]: 返回剧集信息的生成器。
         """
         url = "/api/v3/series/lookup"
-        params = {'term': term}
-        response = await self.get(url, params=params,
-            parser=lambda data: TypeAdapter(list[SeriesResource]).validate_python(data))
+        params = {"term": term}
+        response = await self.get(
+            url,
+            params=params,
+            parser=lambda data: TypeAdapter(list[SeriesResource]).validate_python(data),
+        )
         if response is None:
             return
 
@@ -73,9 +77,12 @@ class SonarrClient(AuthenticatedClient):
             SeriesResource | None: 返回剧集信息，如果查询失败则返回 None。
         """
         url = "/api/v3/series"
-        params = {'tvdbId': tvdb_id, 'includeSeasonImages': 'true'}
-        response = await self.get(url, params=params,
-            parser=lambda data: TypeAdapter(list[SeriesResource]).validate_python(data))
+        params = {"tvdbId": tvdb_id, "includeSeasonImages": "true"}
+        response = await self.get(
+            url,
+            params=params,
+            parser=lambda data: TypeAdapter(list[SeriesResource]).validate_python(data),
+        )
 
         if response and response[0]:
             series = response[0]
@@ -83,7 +90,9 @@ class SonarrClient(AuthenticatedClient):
             return series
         return None
 
-    async def get_episode_by_series_id(self, series_id: int) -> list[EpisodeResource] | None:
+    async def get_episode_by_series_id(
+        self, series_id: int
+    ) -> list[EpisodeResource] | None:
         """根据剧集 ID 获取 Sonarr 中的剧集的所有剧集信息。
         Args:
             series_id (int): 剧集 ID。
@@ -92,13 +101,18 @@ class SonarrClient(AuthenticatedClient):
         """
         url = "/api/v3/episode"
         params = {
-            'seriesId': series_id,
-            'includeSeries': 'true',
-            'includeEpisodeFile': 'true',
-            'includeImages': 'true'
-            }
-        episodes = await self.get(url, params=params,
-            parser=lambda data: TypeAdapter(list[EpisodeResource]).validate_python(data))
+            "seriesId": series_id,
+            "includeSeries": "true",
+            "includeEpisodeFile": "true",
+            "includeImages": "true",
+        }
+        episodes = await self.get(
+            url,
+            params=params,
+            parser=lambda data: TypeAdapter(list[EpisodeResource]).validate_python(
+                data
+            ),
+        )
 
         if episodes:
             for ep in episodes:
@@ -108,7 +122,9 @@ class SonarrClient(AuthenticatedClient):
                     ep.episodeFile.path = self.to_local_path(ep.episodeFile.path)
         return episodes
 
-    async def post_series(self, series_resource: SeriesResource) -> SeriesResource | None:
+    async def post_series(
+        self, series_resource: SeriesResource
+    ) -> SeriesResource | None:
         """添加新剧集到 Sonarr。
         Args:
             series_data (dict): 包含剧集信息的字典。
@@ -117,17 +133,19 @@ class SonarrClient(AuthenticatedClient):
         """
         url = "/api/v3/series"
         series_resource.addOptions = AddSeriesOptions(
-            ignoreEpisodesWithFiles = True,
-            ignoreEpisodesWithoutFiles = False,
-            monitor = "all",
-            searchForMissingEpisodes = True,
-            searchForCutoffUnmetEpisodes = False
+            ignoreEpisodesWithFiles=True,
+            ignoreEpisodesWithoutFiles=False,
+            monitor="all",
+            searchForMissingEpisodes=True,
+            searchForCutoffUnmetEpisodes=False,
         )
         series_resource.monitored = True
         series_resource.seasonFolder = True
-        return await self.post(url,
+        return await self.post(
+            url,
             json=series_resource.model_dump(exclude_unset=True),
-            response_model=SeriesResource)
+            response_model=SeriesResource,
+        )
 
     async def get_root_folders(self) -> list[RootFolderResource] | None:
         """获取 Sonarr 的根文件夹列表。
@@ -135,8 +153,12 @@ class SonarrClient(AuthenticatedClient):
             list[RootFolderResource] | None: 返回根文件夹路径的列表，如果查询失败则返回 None。
         """
         url = "/api/v3/rootfolder"
-        return await self.get(url,
-            parser=lambda data: TypeAdapter(list[RootFolderResource]).validate_python(data))
+        return await self.get(
+            url,
+            parser=lambda data: TypeAdapter(list[RootFolderResource]).validate_python(
+                data
+            ),
+        )
 
     async def get_quality_profiles(self) -> list[QualityProfileResource] | None:
         """获取 Sonarr 的质量配置文件列表。
@@ -144,8 +166,12 @@ class SonarrClient(AuthenticatedClient):
             list[QualityProfileResource] | None: 返回质量配置文件的列表，如果查询失败则返回 None。
         """
         url = "/api/v3/qualityprofile"
-        return await self.get(url,
-            parser=lambda data: TypeAdapter(list[QualityProfileResource]).validate_python(data))
+        return await self.get(
+            url,
+            parser=lambda data: TypeAdapter(
+                list[QualityProfileResource]
+            ).validate_python(data),
+        )
 
     async def get_all_series(self) -> list[SeriesResource] | None:
         """获取 Sonarr 中的所有剧集信息。
@@ -153,8 +179,10 @@ class SonarrClient(AuthenticatedClient):
             list[SeriesResource] | None: 返回所有剧集信息的列表，如果查询失败则返回 None。
         """
         url = "/api/v3/series"
-        series_list = await self.get(url,
-            parser=lambda data: TypeAdapter(list[SeriesResource]).validate_python(data))
+        series_list = await self.get(
+            url,
+            parser=lambda data: TypeAdapter(list[SeriesResource]).validate_python(data),
+        )
 
         if series_list:
             for series in series_list:
